@@ -15,3 +15,7 @@
 - 修正：3 個定義過長、4 個來源⇄概念不一致、rag 缺 s6 引用
 - 修正（審查員）：reflection-loop、rag、over-engineering、tool-use 的常見誤區；agents-md 來源；s2 摘要移除兩處外部資訊
 - 規則更新：常見誤區只能寫 raw 有講的；只能用 raw 內容，不可用檔名或常識
+
+## [2026-11-23] publish | 教學簡報 deck/index.html、wiki.html、process.html、首頁
+- 新增：deck/outline.md（人類已審）、deck/content.md、deck/index.html、index.html
+- 檢查：C2 ×1、R ×2、C4 結構 ×2、C4 截圖 ×4（詳見 docs/run-log.md）

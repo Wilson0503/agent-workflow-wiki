@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM Wiki｜AI Agent 工作流程</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="assets/css/deck.css">
+</head>
+<body>
+<main class="page">
+<nav class="top"><a href="index.html">首頁</a><a href="deck/index.html">教學簡報</a><a href="wiki.html">LLM Wiki</a><a href="process.html">流程與紀錄</a></nav>
+<!-- 本檔由 scripts/build_site.py 產生，請勿手動編輯 -->
+<h1>AI Agent 工作流程｜LLM Wiki</h1>
+<p class="muted">由 6 份課程資料（第 7～10 週）整理成的知識庫：6 頁來源摘要、19 個概念條目、1 頁總覽。每一點都標出來源（s1～s6），教學簡報的每一頁都連回這裡。用 Obsidian 開啟 <code>wiki/</code> 資料夾可看到關聯圖。</p>
+<section class="toc-wrap"><blockquote>AI 回答問題或做簡報前，先讀這份目錄再進入條目。格式：<code>- [[頁面代號]] — 一句話摘要</code></blockquote>
+<h3>總覽</h3>
+<ul><li><a href="#overview">主題總覽：AI Agent 怎麼做事？</a> — 一頁讀懂：Agent = Model + Harness，以及 Loop / Graph 的主線</li></ul>
+<h3>來源（6 份課程資料）</h3>
+<ul><li><a href="#s1-rag-demo">第七週 RAG 作業範例講解</a> — 第七週 RAG 作業範例講解（R01 向量庫、R02 對話機器人）</li><li><a href="#s2-agent-demo-notes">第八週 Agent 實作示範講解（07C Planning）</a> — 第八週 07C Planning 示範、Token 成本、思考＝打草稿</li><li><a href="#s3-three-agent-patterns">第八週作業：用程式做一個簡單的 AI Agent</a> — 第八週作業：Reflection / Tool Use / Planning 定義</li><li><a href="#s4-harness-and-agents-md">第九週課程大綱：Agent 原理、Harness 與專案構建</a> — 第九週：Agent 範式轉移、Harness、員工手冊、Skill</li><li><a href="#s5-karpathy-llm-wiki">Karpathy — LLM Wiki（idea file）</a> — Karpathy LLM Wiki：三層架構、Ingest / Query / Lint</li><li><a href="#s6-loop-and-graph">第十週課程：工作流程拆解與 Agent 架構（Loop 與 Graph）</a> — 第十週：Reflection Loop、Graph、簡報四節點流程</li></ul>
+<h3>概念</h3>
+<h4>基礎</h4>
+<ul><li><a href="#ai-agent">AI 代理（AI Agent）</a> — 多步驟自主執行、會用工具的 AI，Model + Harness</li><li><a href="#harness-engineering">控制工程（Harness Engineering）</a> — 告訴 AI 怎麼按步驟做事的規範與流程</li><li><a href="#prompt-engineering">提示工程（Prompt Engineering）</a> — 設計怎麼問、多輪修正</li><li><a href="#context-engineering">上下文工程（Context Engineering）</a> — 給 AI 足夠且正確的背景資料，避免幻覺</li><li><a href="#rag">檢索增強生成（RAG）</a> — 先檢索段落再回答；知識不累積、像黑盒子</li><li><a href="#llm-wiki">LLM 知識庫（LLM Wiki）</a> — LLM 維護的互連 Markdown 知識庫</li></ul>
+<h4>三種做事方法</h4>
+<ul><li><a href="#reflection">反思（Reflection）</a> — 先產生、再檢查、再修改</li><li><a href="#tool-use">工具使用（Tool Use）</a> — 依需求選擇並呼叫工具</li><li><a href="#planning">規劃（Planning）</a> — 先拆步驟、打草稿再執行</li></ul>
+<h4>流程控制</h4>
+<ul><li><a href="#reflection-loop">反思迴圈（Reflection Loop）</a> — 作者 ⇄ 審查員反覆修訂</li><li><a href="#graph-workflow">圖形工作流（Graph）</a> — 節點＋條件跳躍的流程</li><li><a href="#stopping-conditions">煞車機制（Stopping Conditions）</a> — 次數上限、資訊不足即停、成本控管</li><li><a href="#human-checkpoint">人類檢查點（Human Checkpoint）</a> — 大綱階段是人類最佳檢查點</li><li><a href="#token-cost">Token 成本（Token Cost）</a> — 多階段呼叫讓用量倍增</li><li><a href="#over-engineering">過度工程化（Over-engineering）</a> — Prompt → Loop → Graph，能簡單就簡單</li></ul>
+<h4>專案化</h4>
+<ul><li><a href="#agents-md">員工手冊（AGENTS.md / CLAUDE.md）</a> — 員工手冊：成果、約束、驗收、先計畫</li><li><a href="#agent-skills">技能包（Agent Skills）</a> — 把好流程打包成可重用 SOP</li><li><a href="#coding-agent-vs-work-agent">Coding Agent 與 Work Agent</a> — 對話視窗 vs 操作專案資料夾</li><li><a href="#git-version-control">Git 版本控管（Git Version Control）</a> — 本機版本控管，AI 改壞可復原</li></ul>
+<h3>待確認</h3>
+<ul><li>s4 的「Graphite Engineering」疑為轉錄錯誤，未收錄，需人類確認原意。</li></ul></section>
+<article class="entry" id="overview">
+<h2>主題總覽：AI Agent 怎麼做事？</h2>
+<p class="meta">更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/overview.md">Markdown 原檔</a></p>
+<blockquote>一頁讀懂整個 wiki：Agent = Model + Harness，而 Harness 的核心是「怎麼安排步驟、怎麼檢查」。</blockquote>
+<h3>一條主線</h3>
+<ol><li><b>Agent 是什麼</b>：<a href="#ai-agent">AI 代理（AI Agent）</a> = Model + <a href="#harness-engineering">控制工程（Harness Engineering）</a>。和對話型 AI 的差別是多步驟自主執行、會用工具、能操作檔案（s4、s6）。</li><li><b>給它對的資訊</b>：<a href="#prompt-engineering">提示工程（Prompt Engineering）</a> 管「怎麼問」，<a href="#context-engineering">上下文工程（Context Engineering）</a> 管「給什麼資料」；做法有 <a href="#rag">檢索增強生成（RAG）</a> 與 <a href="#llm-wiki">LLM 知識庫（LLM Wiki）</a>（s1、s5、s6）。</li><li><b>三種基本做事方法</b>：<a href="#reflection">反思（Reflection）</a>、<a href="#tool-use">工具使用（Tool Use）</a>、<a href="#planning">規劃（Planning）</a>（s3、s2）。</li><li><b>把步驟串成流程</b>：固定來回的 <a href="#reflection-loop">反思迴圈（Reflection Loop）</a>，與可依條件跳躍的 <a href="#graph-workflow">圖形工作流（Graph）</a>（s6）。</li><li><b>讓流程可控</b>：<a href="#stopping-conditions">煞車機制（Stopping Conditions）</a> 防止無窮迴圈、<a href="#token-cost">Token 成本（Token Cost）</a> 提醒每一步都要錢、<a href="#human-checkpoint">人類檢查點（Human Checkpoint）</a> 讓人在最划算的時機介入（s2、s6）。</li><li><b>別做過頭</b>：<a href="#over-engineering">過度工程化（Over-engineering）</a>——Prompt → Loop → Graph，一層不夠才往下一層（s6）。</li><li><b>寫成規則、留下版本</b>：<a href="#agents-md">員工手冊（AGENTS.md / CLAUDE.md）</a>、<a href="#agent-skills">技能包（Agent Skills）</a>、<a href="#coding-agent-vs-work-agent">Coding Agent 與 Work Agent</a>、<a href="#git-version-control">Git 版本控管（Git Version Control）</a>（s4、s5、s6）。</li></ol>
+<h3>來源一覽</h3>
+<ul><li><a href="#s1-rag-demo">第七週 RAG 作業範例講解</a>、<a href="#s2-agent-demo-notes">第八週 Agent 實作示範講解（07C Planning）</a>、<a href="#s3-three-agent-patterns">第八週作業：用程式做一個簡單的 AI Agent</a>、<a href="#s4-harness-and-agents-md">第九週課程大綱：Agent 原理、Harness 與專案構建</a>、<a href="#s5-karpathy-llm-wiki">Karpathy — LLM Wiki（idea file）</a>、<a href="#s6-loop-and-graph">第十週課程：工作流程拆解與 Agent 架構（Loop 與 Graph）</a></li></ul>
+</article>
+<article class="entry" id="s1-rag-demo">
+<h2>第七週 RAG 作業範例講解</h2>
+<p class="meta">原始檔：<a href="raw/s1_w07_RAG範例講解.txt">raw/s1_w07_RAG範例講解.txt</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/sources/s1-rag-demo.md">Markdown 原檔</a></p>
+<h3>這份資料在講什麼</h3>
+<p>課程影片 1:22:02～1:49:50 的整理：老師用「勞動部工讀生權益」示範資料集，講解兩支 Colab 程式——R01 建立並匯出向量資料庫、R02 載入向量庫做 RAG 對話機器人並用 Gradio 展示，以及作業哪些地方不能照抄。</p>
+<h3>重點摘錄</h3>
+<ul><li>資料集先切成一塊塊 <code>.txt</code>，每塊有標題、Metadata、要做 Embedding 的內文、練習檢索問題。</li><li>R01：安裝 sentence-transformers 與 FAISS → 載入 Embedding 模型 → 內文轉向量 → <b>打包前先用測試問題驗證檢索結果</b> → 匯出 zip。</li><li>R02：用 API 呼叫 LLM（範例用 Groq）→ 載入向量庫 → System Prompt＋User Prompt 把檢索到的資料和問題結合，讓 LLM 像做「閱讀測驗」一樣回答。</li><li>測試時要確認機器人「嚴格根據資料回答，而不是自行幻想（Hallucination）」。</li><li>找不到資料時的回應要改成符合情境的句子（例如「本資料庫中查無相關規定」）。</li><li>R02 必須自動下載向量庫，助教按「全部執行」就能跑。</li></ul>
+<h3>產生／更新的概念</h3>
+<ul><li><a href="#rag">檢索增強生成（RAG）</a> — RAG 的完整流程與「先驗證檢索再打包」</li><li><a href="#context-engineering">上下文工程（Context Engineering）</a> — 把檢索到的背景資料放進 Prompt，避免幻覺</li><li><a href="#prompt-engineering">提示工程（Prompt Engineering）</a> — System Prompt / User Prompt 的分工、找不到資料時的回應</li></ul>
+<h3>轉錄錯誤與疑點</h3>
+<ul><li>「公讀也有特休嗎」應為「工讀」。</li><li>「轉為向向量」應為「向量」。</li><li>「Embedding Gemma 2」：原文寫法，模型正確名稱無法從 raw 確認，wiki 不引用模型名稱。</li></ul>
+</article>
+<article class="entry" id="s2-agent-demo-notes">
+<h2>第八週 Agent 實作示範講解（07C Planning）</h2>
+<p class="meta">原始檔：<a href="raw/s2_w08_Agent實作講解.txt">raw/s2_w08_Agent實作講解.txt</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/sources/s2-agent-demo-notes.md">Markdown 原檔</a></p>
+<h3>這份資料在講什麼</h3>
+<p>第八週課堂後半段的整理：三個範例 07A Reflection、07B Tool Use（飲料店）、07C Planning（將倒楣事正向轉化的思考生成器），以及老師口頭補充的實務陷阱。</p>
+<h3>重點摘錄</h3>
+<ul><li>07A＝Reflection、07B＝Tool Use（飲料店範例）、07C＝Planning；不熟程式的同學老師推薦 07C。</li><li><b>Agent 很燒 Token</b>：一般問答呼叫一次模型，Agent 是多階段架構（先規劃／打草稿，再正式生成），每階段都呼叫模型，Token 消耗倍數成長。</li><li>Groq 免費 API 容易跑到一半因額度中斷；改用較小模型可降低中斷機率；商業應用要用付費 API。</li><li>範例程式寫滿預設為 False 的測試開關，避免一執行就燒光額度。</li><li>AI 幫忙寫的 Prompt 常常太長，有些模型吃不下，反而變差，要親自測試並精簡。</li><li>「AI 思考」的本質是<b>打草稿</b>，打草稿的步驟是人類用 System Prompt 教它的（先確認事實 → 評估失落點 → 發想幽默切入點 → 最後生成正文）。</li></ul>
+<h3>產生／更新的概念</h3>
+<ul><li><a href="#planning">規劃（Planning）</a> — 07C：先打草稿再生成；思考＝打草稿</li><li><a href="#token-cost">Token 成本（Token Cost）</a> — 多階段呼叫讓 Token 倍增、免費 API 限制、測試開關</li><li><a href="#prompt-engineering">提示工程（Prompt Engineering）</a> — AI 寫的長 Prompt 陷阱</li><li><a href="#tool-use">工具使用（Tool Use）</a> — 07B 飲料店範例</li><li><a href="#reflection">反思（Reflection）</a> — 07A 為 Reflection 範例</li><li><a href="#stopping-conditions">煞車機制（Stopping Conditions）</a> — 預設 False 的測試開關是程式層的防呆</li></ul>
+<h3>轉錄錯誤與疑點</h3>
+<ul><li>「原因式思考生成器」疑為轉錄錯誤，正確名稱無法從 raw 確認；wiki 一律稱「將倒楣事正向轉化的思考生成器」。</li><li>原文的範例網址被標成「[suspicious link removed]」，無法得知網址。</li><li>本整理只涵蓋課堂「五、07C 實作示範」之後；07A、07B 的細節不在這份資料裡。</li></ul>
+</article>
+<article class="entry" id="s3-three-agent-patterns">
+<h2>第八週作業：用程式做一個簡單的 AI Agent</h2>
+<p class="meta">原始檔：<a href="raw/s3_w08_Agent三種模式作業.txt">raw/s3_w08_Agent三種模式作業.txt</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/sources/s3-three-agent-patterns.md">Markdown 原檔</a></p>
+<h3>這份資料在講什麼</h3>
+<p>第八週作業說明：從 Reflection、Tool Use、Planning 三種方法選一種，參考 Demo07a/b/c 改成自己的 Agent，並用 Gradio 展示。</p>
+<h3>重點摘錄</h3>
+<ul><li><b>Reflection</b>：讓 AI 先產生結果，再自行檢查、反思並修改答案。</li><li><b>Tool Use</b>：讓 AI 根據需求選擇並使用工具，例如計算機、搜尋功能、自己寫的 function。</li><li><b>Planning</b>：讓 AI 面對任務時先拆解步驟，再依照計畫逐步完成。</li><li>重點不是做很複雜的系統，而是理解所選方法並讓它在程式中實際運作。</li><li>高分條件之一：方法要「明確呈現在程式流程中」，執行結果看得出 Agent 依設計處理，並有進一步調整、測試或改良。</li></ul>
+<h3>產生／更新的概念</h3>
+<ul><li><a href="#reflection">反思（Reflection）</a> — 先產生、再檢查、再修改的定義</li><li><a href="#tool-use">工具使用（Tool Use）</a> — 選擇並使用工具的定義與工具例子</li><li><a href="#planning">規劃（Planning）</a> — 先拆解步驟再執行的定義</li><li><a href="#ai-agent">AI 代理（AI Agent）</a> — Agent 的三種基本做事方法</li><li><a href="#over-engineering">過度工程化（Over-engineering）</a> — 「重點不是非常複雜的系統」</li></ul>
+<h3>轉錄錯誤與疑點</h3>
+<ul><li>無（此為作業原文，不是轉錄）。</li></ul>
+</article>
+<article class="entry" id="s4-harness-and-agents-md">
+<h2>第九週課程大綱：Agent 原理、Harness 與專案構建</h2>
+<p class="meta">原始檔：<a href="raw/s4_w09_Harness與AGENTS課程大綱.txt">raw/s4_w09_Harness與AGENTS課程大綱.txt</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/sources/s4-harness-and-agents-md.md">Markdown 原檔</a></p>
+<h3>這份資料在講什麼</h3>
+<p>第九週簡報文件整理：從「對話型 LLM」到「代理型 AI Agent」的範式轉移、Harness Engineering、專案資料夾與 agent.md / claude.md 員工手冊、Skill 打包、工具比較、三個實務案例，以及 SIMA 研究與神經網路訓練的複習（後兩者與本主題無關，未收錄）。</p>
+<h3>重點摘錄</h3>
+<ul><li>使用者角色從手動整理資料的「打工仔」，變成只下達目標與驗收標準的「管理者／老闆（出一張嘴）」。</li><li>對話型 AI：一問一答、全程需人工在場、只在對話框內生成文字。Agent：多步驟自主執行、交代任務後可離場、可讀寫本機檔案、調用工具，產出完整專案成果。</li><li><b>AI Agent = AI Model（LLM 大腦）+ Harness</b>；頂級模型基礎實力差距縮小，決定優劣的是 Harness（引導 AI 做事的方法、檢查機制、工具介面）。Harness 涵蓋 Prompt、RAG、機制的設計。</li><li>員工手冊 agent.md / claude.md / gemini.md：寫清楚<b>成果定義、約束條件、驗收標準、先計畫後執行</b>。</li><li>做出滿意的流程後，可請 AI 把 SOP 打包成 <b>Skill</b>，之後反覆調用，品質與風格不會隨機波動。</li><li>案例「桌面檔案分類器」：Agent 先擬 5 類分類計畫 → 管理員確認 → 才建資料夾、搬檔案 → 回報結果。</li><li>LLM Wiki 比向量 RAG 更可解釋：人和 LLM 都能直接讀 <code>index.md</code> 與條目，「找對找錯一目瞭然」。</li><li>簡報要求：首頁 <code>index.html</code> 集中連結所有簡報；GitHub 要上傳完整專案（規則檔、assets、中間產物），評分看規則檔與專案引導結構。</li></ul>
+<h3>產生／更新的概念</h3>
+<ul><li><a href="#ai-agent">AI 代理（AI Agent）</a> — 對話型 AI 與 Agent 的比較</li><li><a href="#harness-engineering">控制工程（Harness Engineering）</a> — Agent = Model + Harness</li><li><a href="#agents-md">員工手冊（AGENTS.md / CLAUDE.md）</a> — 員工手冊的四個要素</li><li><a href="#agent-skills">技能包（Agent Skills）</a> — 把 SOP 打包成 Skill</li><li><a href="#human-checkpoint">人類檢查點（Human Checkpoint）</a> — 先計畫後執行、管理員確認</li><li><a href="#llm-wiki">LLM 知識庫（LLM Wiki）</a> — 可解釋性、index.md</li><li><a href="#rag">檢索增強生成（RAG）</a> — 向量 RAG 的黑盒子缺點</li><li><a href="#tool-use">工具使用（Tool Use）</a> — Agent 調用工具</li><li><a href="#planning">規劃（Planning）</a> — 先計畫後執行</li><li><a href="#coding-agent-vs-work-agent">Coding Agent 與 Work Agent</a> — OpenWorker + Ollama 本地方案</li></ul>
+<h3>轉錄錯誤與疑點</h3>
+<ul><li>「LMWiki」應為「LLM Wiki」。</li><li>「RAG Engineering 與 Graphite Engineering 等均屬於 Harness 的分支」：「Graphite Engineering」疑為轉錄錯誤（可能指第十週的 Graph），無法從 raw 確認，wiki 不採用此名詞。</li><li>「與 AI 討訪」應為「討論」。</li></ul>
+</article>
+<article class="entry" id="s5-karpathy-llm-wiki">
+<h2>Karpathy — LLM Wiki（idea file）</h2>
+<p class="meta">原始檔：<a href="raw/s5_w09_Karpathy_LLM_Wiki.txt">raw/s5_w09_Karpathy_LLM_Wiki.txt</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/sources/s5-karpathy-llm-wiki.md">Markdown 原檔</a></p>
+<h3>這份資料在講什麼</h3>
+<p>Andrej Karpathy 的 gist（英文原文）：一種讓 LLM 持續建立、維護個人知識庫的模式，以及它和 RAG 的差別、三層架構、三種操作、index / log 兩個特殊檔案。</p>
+<h3>重點摘錄</h3>
+<ul><li>RAG 每次提問都從原始文件「重新發現」知識，沒有累積；LLM Wiki 是 LLM <b>逐步建立並維護的持久 wiki</b>，知識編譯一次、持續更新。</li><li>三層：<b>raw sources</b>（不可修改，事實來源）→ <b>wiki</b>（LLM 全權撰寫維護）→ <b>schema</b>（CLAUDE.md / AGENTS.md，規定結構、慣例與流程）。</li><li>schema 讓 LLM 成為「有紀律的 wiki 維護者，而不是一般聊天機器人」，由人和 LLM 一起持續調整。</li><li>三種操作：<b>Ingest</b>（讀來源、討論重點、寫摘要、更新相關頁、記 log）、<b>Query</b>（讀 index 找頁面、附引用回答，好答案可存回 wiki）、<b>Lint</b>（找矛盾、過時說法、孤兒頁、缺頁）。</li><li><code>index.md</code> 是內容目錄；<code>log.md</code> 是只追加的時間序紀錄，用固定前綴 <code>## [日期] ingest | 標題</code> 方便 grep。</li><li>中等規模（約 100 份來源）只靠 index 檔就夠，不需要 embedding RAG。</li><li>人負責挑資料、引導分析、問好問題；LLM 負責摘要、交叉引用、歸檔等雜務。wiki 就是一個 git repo，有版本歷史。</li></ul>
+<h3>產生／更新的概念</h3>
+<ul><li><a href="#llm-wiki">LLM 知識庫（LLM Wiki）</a> — 三層架構、三種操作</li><li><a href="#rag">檢索增強生成（RAG）</a> — RAG 沒有累積</li><li><a href="#agents-md">員工手冊（AGENTS.md / CLAUDE.md）</a> — schema 檔的角色</li><li><a href="#human-checkpoint">人類檢查點（Human Checkpoint）</a> — 作者偏好一次 ingest 一份並親自檢查</li><li><a href="#git-version-control">Git 版本控管（Git Version Control）</a> — wiki 就是 git repo</li></ul>
+<h3>轉錄錯誤與疑點</h3>
+<ul><li>無（原文為英文文件）。</li></ul>
+</article>
+<article class="entry" id="s6-loop-and-graph">
+<h2>第十週課程：工作流程拆解與 Agent 架構（Loop 與 Graph）</h2>
+<p class="meta">原始檔：<a href="raw/s6_w10_Loop與Graph課程說明.txt">raw/s6_w10_Loop與Graph課程說明.txt</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/sources/s6-loop-and-graph.md">Markdown 原檔</a></p>
+<h3>這份資料在講什麼</h3>
+<p>第十週 1:52:00 課程精華整理：Agent = Model + Harness、Prompt / Context Engineering、Work Agent 與 Coding Agent、Reflection Loop 與 Graph 架構、LLM Wiki 建置，以及用 Graph 把 LLM Wiki 轉成 HTML 簡報的四節點流程。</p>
+<h3>重點摘錄</h3>
+<ul><li>Harness＝「告訴 AI 如何按步驟做事的機制、規範與工作流程」，品質決定 Agent 能否穩健完成多階段任務。學名詞是為了「出外不被話術欺騙」。</li><li>Prompt Engineering：設計提問、多輪討論修正。Context Engineering：給 AI 足夠且正確的背景資訊（RAG、LLM Wiki），避免它在資訊不足時亂猜或幻覺。</li><li>Coding Agent 不只寫程式，本質是「模仿人類操作電腦專案資料夾」；指令只是快捷鍵，直接用口語交代即可。</li><li><b>Reflection Loop</b>：作者 Agent 產生 → 審查員 Agent 依標準列缺點與建議 → 作者修訂再送審。成功關鍵：客觀放行條件＋煞車機制（最多 3～5 次、資訊不足即停、控管 Token 成本）。</li><li><b>Graph</b>：每個 Node 專注一件事，流程可依條件在節點間跳躍、回溯（例如在輸出報告階段發現資料遺漏，就跳回審查或大綱節點）。</li><li>設計心法：簡單 Prompt 能解決就不用 Loop；Loop 能解決就不要過度工程化堆 Graph。流程應從人類實際做事的步驟演化而來。</li><li>LLM Wiki 建置前 AI 要先訪談（廣度深度、來源格式、連結風格、語言與公式規則），再產生 agent.md 專案憲法。Obsidian Graph View 可把雙向連結畫成網絡圖。</li><li>簡報 Graph：Node 1 大綱（<b>人類最佳檢查點</b>，在這裡修正可避免重做 HTML）→ Node 2 逐頁內容 → Node 3 HTML/CSS 渲染 → Node 4 自動驗證（圖片路徑、引用、文字溢出），不通過就跳回 Node 2 或 Node 1。</li><li>Git 是本機版本控管、GitHub 是雲端平台；AI 搞砸檔案時可用 Git 復原。</li></ul>
+<h3>產生／更新的概念</h3>
+<ul><li><a href="#harness-engineering">控制工程（Harness Engineering）</a>、<a href="#prompt-engineering">提示工程（Prompt Engineering）</a>、<a href="#context-engineering">上下文工程（Context Engineering）</a></li><li><a href="#coding-agent-vs-work-agent">Coding Agent 與 Work Agent</a></li><li><a href="#reflection">反思（Reflection）</a>、<a href="#reflection-loop">反思迴圈（Reflection Loop）</a>、<a href="#stopping-conditions">煞車機制（Stopping Conditions）</a>、<a href="#token-cost">Token 成本（Token Cost）</a></li><li><a href="#graph-workflow">圖形工作流（Graph）</a>、<a href="#human-checkpoint">人類檢查點（Human Checkpoint）</a>、<a href="#over-engineering">過度工程化（Over-engineering）</a></li><li><a href="#llm-wiki">LLM 知識庫（LLM Wiki）</a>、<a href="#agents-md">員工手冊（AGENTS.md / CLAUDE.md）</a>、<a href="#rag">檢索增強生成（RAG）</a>、<a href="#git-version-control">Git 版本控管（Git Version Control）</a>、<a href="#ai-agent">AI 代理（AI Agent）</a></li></ul>
+<h3>轉錄錯誤與疑點</h3>
+<ul><li>「LOP」應為「Loop」（原文把 Reflection Loop 簡寫成 LOP）。</li><li>「Grave（Graph／圖形）架構」應為「Graph」。</li><li>「LM Wiki」應為「LLM Wiki」；「日系可愛粉采風」應為「粉彩風」。</li><li>「Karpathy 最初亦試圖建置傳統 RAG，但隨後發現…」：s5 原文沒有提到這段經歷，只說中等規模不需要 embedding RAG。wiki 只寫「s6 這樣說」，不當成 Karpathy 的原話。</li></ul>
+</article>
+<article class="entry" id="ai-agent">
+<h2>AI 代理（AI Agent）</h2>
+<p class="meta">來源：<a href="#s3-three-agent-patterns">s3</a>、<a href="#s4-harness-and-agents-md">s4</a>、<a href="#s6-loop-and-graph">s6</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/concepts/ai-agent.md">Markdown 原檔</a></p>
+<blockquote>會自己多步驟做事、用工具、讀寫檔案的 AI：Model + Harness。</blockquote>
+<h3>重點</h3>
+<ul><li>公式：<b>AI Agent = AI Model + Harness</b>；Model 負責理解與生成語言，Harness 負責「怎麼按步驟做事」（s6、s4）。</li><li>和對話型 AI 的差別：對話型是一問一答、全程要人在場；Agent 是多步驟自主執行，交代完可以離場（s4）。</li><li>Agent 能讀寫本機檔案、建資料夾、開瀏覽器、調用工具，產出的是完整專案成果，而不只是一段回答（s4）。</li><li>人的角色從「打工仔」變成「管理者／老闆」：只要下達目標與驗收標準（s4）。</li><li>三種基本做事方法：Reflection、Tool Use、Planning（s3）。</li></ul>
+<h3>例子</h3>
+<ul><li>桌面檔案分類器：Agent 讀目錄、擬分類計畫、等確認後自己搬檔案並回報（s4）。</li></ul>
+<h3>常見誤區</h3>
+<ul><li>以為 Agent 是「更聰明的聊天視窗」。差別不在模型，而在 Harness 讓它能多步驟執行、操作檔案和工具（s4、s6）。</li></ul>
+<h3>相關概念</h3>
+<ul><li><a href="#harness-engineering">控制工程（Harness Engineering）</a> — Agent 的另一半</li><li><a href="#reflection">反思（Reflection）</a>、<a href="#tool-use">工具使用（Tool Use）</a>、<a href="#planning">規劃（Planning）</a> — Agent 的三種基本做事方法</li><li><a href="#coding-agent-vs-work-agent">Coding Agent 與 Work Agent</a> — 市面上 Agent 工具的兩大類</li></ul>
+</article>
+<article class="entry" id="harness-engineering">
+<h2>控制工程（Harness Engineering）</h2>
+<p class="meta">來源：<a href="#s4-harness-and-agents-md">s4</a>、<a href="#s6-loop-and-graph">s6</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/concepts/harness-engineering.md">Markdown 原檔</a></p>
+<blockquote>設計「告訴 AI 怎麼按步驟做事」的規範、檢查機制與工作流程。</blockquote>
+<h3>重點</h3>
+<ul><li>Harness＝告訴 AI 如何按步驟做事的機制、規範與工作流程；它的品質決定 Agent 能不能穩健完成多階段任務（s6）。</li><li>頂級模型的基礎實力差距已經縮小，實際應用好壞的關鍵在 Harness（s4）。</li><li>Harness 包含引導 AI 做事的方法、檢查機制、工具介面；涵蓋 Prompt、RAG 與機制的設計（s4）。</li><li>Loop、Graph 這些流程設計，都是 Harness 的一部分（s6）。</li><li>學這些名詞的目的：建立技術認知，「出外不被話術欺騙」（s6）。</li></ul>
+<h3>例子</h3>
+<ul><li>本專案的 CLAUDE.md、檢查腳本、簡報 Graph，就是一套 Harness（s6 的簡報流程）。</li></ul>
+<h3>常見誤區</h3>
+<ul><li>以為換更強的模型就能解決問題。s4 指出模型差距縮小，差別在 Harness。</li></ul>
+<h3>相關概念</h3>
+<ul><li><a href="#ai-agent">AI 代理（AI Agent）</a> — Agent = Model + Harness</li><li><a href="#prompt-engineering">提示工程（Prompt Engineering）</a>、<a href="#context-engineering">上下文工程（Context Engineering）</a> — Harness 裡處理「問什麼」與「給什麼資料」的部分</li><li><a href="#reflection-loop">反思迴圈（Reflection Loop）</a>、<a href="#graph-workflow">圖形工作流（Graph）</a> — Harness 裡的流程控制</li><li><a href="#agents-md">員工手冊（AGENTS.md / CLAUDE.md）</a> — Harness 寫成文件的樣子</li></ul>
+</article>
+<article class="entry" id="prompt-engineering">
+<h2>提示工程（Prompt Engineering）</h2>
+<p class="meta">來源：<a href="#s1-rag-demo">s1</a>、<a href="#s2-agent-demo-notes">s2</a>、<a href="#s6-loop-and-graph">s6</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/concepts/prompt-engineering.md">Markdown 原檔</a></p>
+<blockquote>設計怎麼問 AI，並透過多輪討論修正，提煉出最好的產出。</blockquote>
+<h3>重點</h3>
+<ul><li>聚焦在設計提問指令，以及和 AI 多輪反覆討論、互動修正的技巧（s6）。</li><li>System Prompt 放角色與規則，User Prompt 放使用者問題；RAG 會把檢索資料和問題組合進 Prompt（s1）。</li><li>Prompt 也要設計「找不到資料時怎麼回答」，並改成符合情境的句子（s1）。</li><li>AI 幫忙寫的 Prompt 常常過長，有些模型吃不下反而變差，要親自測試並精簡（s2）。</li><li>簡單 Prompt 能一次解決的問題，就不需要 Loop（s6）。</li></ul>
+<h3>例子</h3>
+<ul><li>07C 用 System Prompt 教 AI 打草稿的步驟：先確認事實 → 評估失落點 → 發想幽默切入點 → 生成正文（s2）。</li></ul>
+<h3>常見誤區</h3>
+<ul><li>「Prompt 越長越詳細越好」——s2 提醒過長反而會壞掉。</li></ul>
+<h3>相關概念</h3>
+<ul><li><a href="#context-engineering">上下文工程（Context Engineering）</a> — 下一層：不只問得好，還要給足資料</li><li><a href="#over-engineering">過度工程化（Over-engineering）</a> — Prompt 能解決就不要用 Loop</li><li><a href="#planning">規劃（Planning）</a> — 打草稿的步驟是靠 Prompt 教的</li></ul>
+</article>
+<article class="entry" id="context-engineering">
+<h2>上下文工程（Context Engineering）</h2>
+<p class="meta">來源：<a href="#s1-rag-demo">s1</a>、<a href="#s6-loop-and-graph">s6</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/concepts/context-engineering.md">Markdown 原檔</a></p>
+<blockquote>把足夠而且正確的背景資料交給 AI，讓它不用亂猜。</blockquote>
+<h3>重點</h3>
+<ul><li>聚焦在如何構建並傳遞「足夠充分且正確的背景資訊」給 AI（s6）。</li><li>核心目的是避免 AI 在資訊不足時盲目猜測或產生幻覺（s6）。</li><li>常見做法：傳統 RAG，以及本課程實作的 LLM Wiki（s6）。</li><li>RAG 把檢索到的背景資料和問題一起放進 Prompt，讓 LLM 像做「閱讀測驗」一樣作答（s1）。</li></ul>
+<h3>例子</h3>
+<ul><li>第七週 RAG 機器人測試時要確認它「嚴格根據資料回答，而不是自行幻想」（s1）。</li></ul>
+<h3>常見誤區</h3>
+<ul><li>只顧著改問法（Prompt），卻沒給 AI 需要的資料；資料不夠時 AI 只能猜（s6）。</li></ul>
+<h3>相關概念</h3>
+<ul><li><a href="#prompt-engineering">提示工程（Prompt Engineering）</a> — 上一層：怎麼問</li><li><a href="#rag">檢索增強生成（RAG）</a>、<a href="#llm-wiki">LLM 知識庫（LLM Wiki）</a> — 兩種提供 context 的做法</li><li><a href="#harness-engineering">控制工程（Harness Engineering）</a> — Context Engineering 是 Harness 的一環</li></ul>
+</article>
+<article class="entry" id="rag">
+<h2>檢索增強生成（RAG）</h2>
+<p class="meta">來源：<a href="#s1-rag-demo">s1</a>、<a href="#s4-harness-and-agents-md">s4</a>、<a href="#s5-karpathy-llm-wiki">s5</a>、<a href="#s6-loop-and-graph">s6</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/concepts/rag.md">Markdown 原檔</a></p>
+<blockquote>先從資料庫找出相關段落，再讓 LLM 根據段落回答。</blockquote>
+<h3>重點</h3>
+<ul><li>流程：資料切塊 → 內文做 Embedding 轉向量 → 存進向量資料庫（FAISS）→ 提問時檢索 → 把段落和問題組合成 Prompt 交給 LLM（s1）。</li><li>打包向量庫前，要先用測試問題驗證檢索結果是否準確（s1）。</li><li>缺點一：每次提問都從原始文件重新拼湊，知識沒有累積（s5）。</li><li>缺點二：向量檢索像黑盒子，找對找錯不容易看出來（s4）。</li><li>中等規模的知識庫，用 index 檔就夠，不一定需要 embedding RAG（s5）。</li><li>第十週把 RAG 和 LLM Wiki 並列為 Context Engineering 的常見做法（s6）。</li></ul>
+<h3>例子</h3>
+<ul><li>第七週「勞動部工讀生權益」示範：R01 建向量庫、R02 做 Gradio 對話機器人（s1）。</li></ul>
+<h3>常見誤區</h3>
+<ul><li>跳過打包前的檢索驗證，沒確認向量搜尋抓到的文本與 Metadata 是否準確（s1）。</li></ul>
+<h3>相關概念</h3>
+<ul><li><a href="#context-engineering">上下文工程（Context Engineering）</a> — RAG 是提供 context 的一種方式</li><li><a href="#llm-wiki">LLM 知識庫（LLM Wiki）</a> — 不需要向量、可解釋性更高的替代方案</li></ul>
+</article>
+<article class="entry" id="llm-wiki">
+<h2>LLM 知識庫（LLM Wiki）</h2>
+<p class="meta">來源：<a href="#s4-harness-and-agents-md">s4</a>、<a href="#s5-karpathy-llm-wiki">s5</a>、<a href="#s6-loop-and-graph">s6</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/concepts/llm-wiki.md">Markdown 原檔</a></p>
+<blockquote>讓 LLM 把原始資料整理成互相連結的 Markdown 頁面，並持續維護。</blockquote>
+<h3>重點</h3>
+<ul><li>三層：raw（原始資料，不可修改）→ wiki（LLM 撰寫維護）→ schema（CLAUDE.md / AGENTS.md 規則）（s5）。</li><li>三種操作：Ingest（吸收新資料）、Query（查詢並附引用）、Lint（健康檢查：矛盾、孤兒頁、缺頁）（s5）。</li><li>和 RAG 不同：知識「編譯一次、持續更新」，交叉引用和矛盾都已整理好，會越來越豐富（s5）。</li><li>不用轉向量，靠 <code>index.md</code> 目錄讓 Agent 直接找到頁面；人和 LLM 都看得懂，找對找錯一目瞭然（s6、s4）。</li><li>建置前 AI 要先訪談：研究廣度深度、來源格式、連結風格、語言與公式規則（s6）。</li><li>用 Obsidian 開啟 wiki 資料夾，Graph View 會把雙向連結畫成網絡圖（s6、s5）。</li></ul>
+<h3>例子</h3>
+<ul><li>本專案就是一個 LLM Wiki：6 份課程資料 → 來源摘要＋概念條目 → 教學簡報。</li></ul>
+<h3>常見誤區</h3>
+<ul><li>以為 LLM Wiki 是給人線性閱讀的文章；它主要是讓 AI 在 context 中檢索、提取（s6）。</li></ul>
+<blockquote class="warn">⚠️ 來源差異：s6 說 Karpathy「最初也試圖建置傳統 RAG，後來發現…」，但 s5（Karpathy 原文）沒有提到這段經歷。本 wiki 不把這段當成 Karpathy 的說法。</blockquote>
+<h3>相關概念</h3>
+<ul><li><a href="#rag">檢索增強生成（RAG）</a> — 對照組</li><li><a href="#context-engineering">上下文工程（Context Engineering）</a> — LLM Wiki 是提供 context 的方法</li><li><a href="#agents-md">員工手冊（AGENTS.md / CLAUDE.md）</a> — LLM Wiki 的 schema 層</li><li><a href="#git-version-control">Git 版本控管（Git Version Control）</a> — wiki 就是一個 git repo</li></ul>
+</article>
+<article class="entry" id="reflection">
+<h2>反思（Reflection）</h2>
+<p class="meta">來源：<a href="#s2-agent-demo-notes">s2</a>、<a href="#s3-three-agent-patterns">s3</a>、<a href="#s6-loop-and-graph">s6</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/concepts/reflection.md">Markdown 原檔</a></p>
+<blockquote>讓 AI 先產生結果，再自己檢查、反思並修改答案。</blockquote>
+<h3>重點</h3>
+<ul><li>定義：先產生結果 → 自行檢查、反思 → 修改答案（s3）。</li><li>是第八週三種 Agent 方法之一，對應範例 07A（s3、s2）。</li><li>第十週把它擴充成多角色的 Reflection Loop：作者和審查員分開，反覆修訂（s6）。</li></ul>
+<h3>例子</h3>
+<ul><li>07A Reflection 範例（s2；細節不在本 wiki 的來源中）。</li></ul>
+<h3>常見誤區</h3>
+<ul><li>只有「再想一次」卻沒有檢查標準。s6 指出要有客觀的放行條件，否則不知道什麼時候算改好。</li></ul>
+<h3>相關概念</h3>
+<ul><li><a href="#reflection-loop">反思迴圈（Reflection Loop）</a> — Reflection 的流程化版本</li><li><a href="#ai-agent">AI 代理（AI Agent）</a> — Agent 三種基本方法之一</li><li><a href="#tool-use">工具使用（Tool Use）</a>、<a href="#planning">規劃（Planning）</a> — 同一週的另外兩種方法</li></ul>
+</article>
+<article class="entry" id="tool-use">
+<h2>工具使用（Tool Use）</h2>
+<p class="meta">來源：<a href="#s2-agent-demo-notes">s2</a>、<a href="#s3-three-agent-patterns">s3</a>、<a href="#s4-harness-and-agents-md">s4</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/concepts/tool-use.md">Markdown 原檔</a></p>
+<blockquote>讓 AI 依需求挑選並呼叫外部工具，例如計算機或搜尋。</blockquote>
+<h3>重點</h3>
+<ul><li>定義：AI 根據需求選擇並使用工具（s3）。</li><li>工具例子：計算機、搜尋功能、自己寫的 function（s3）。</li><li>對應範例 07B（飲料店）（s2）。</li><li>現代 Agent 能調用工具、讀寫本機檔案，這是它和對話型 AI 的差別之一（s4）。</li></ul>
+<h3>例子</h3>
+<ul><li>07B 飲料店範例（s2；細節不在本 wiki 的來源中）。</li><li>檔案分類器 Agent 調用系統工具建資料夾、搬檔案（s4）。</li></ul>
+<h3>常見誤區</h3>
+<ul><li>來源未提及。</li></ul>
+<h3>相關概念</h3>
+<ul><li><a href="#ai-agent">AI 代理（AI Agent）</a> — 會用工具是 Agent 的特徵</li><li><a href="#reflection">反思（Reflection）</a>、<a href="#planning">規劃（Planning）</a> — 同一週的另外兩種方法</li><li><a href="#coding-agent-vs-work-agent">Coding Agent 與 Work Agent</a> — Coding Agent 的工具就是整個專案資料夾</li></ul>
+</article>
+<article class="entry" id="planning">
+<h2>規劃（Planning）</h2>
+<p class="meta">來源：<a href="#s2-agent-demo-notes">s2</a>、<a href="#s3-three-agent-patterns">s3</a>、<a href="#s4-harness-and-agents-md">s4</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/concepts/planning.md">Markdown 原檔</a></p>
+<blockquote>面對任務先拆解步驟、打草稿，再照計畫一步步完成。</blockquote>
+<h3>重點</h3>
+<ul><li>定義：先拆解步驟，再依照計畫逐步完成（s3）。</li><li>對應範例 07C：先打草稿（Reasoning Draft），再生成正文；老師推薦不熟程式的同學選這個（s2）。</li><li>AI 的「思考」本質是<b>打草稿</b>，沒有神秘的靈魂；打草稿的步驟是人用 System Prompt 教的（s2）。</li><li>專案型 Agent 也要「先計畫後執行」：動手搬檔案前先提計畫給人審（s4）。</li></ul>
+<h3>例子</h3>
+<ul><li>07C 將倒楣事正向轉化的思考生成器：確認事實 → 評估失落點 → 發想幽默切入點 → 生成正文（s2）。</li></ul>
+<h3>常見誤區</h3>
+<ul><li>以為 AI 會思考是因為它有意識；s2 強調那只是照人教的步驟打草稿。</li></ul>
+<h3>相關概念</h3>
+<ul><li><a href="#human-checkpoint">人類檢查點（Human Checkpoint）</a> — 計畫正好是人類介入審查的時機</li><li><a href="#token-cost">Token 成本（Token Cost）</a> — 多一個規劃階段就多一次模型呼叫</li><li><a href="#prompt-engineering">提示工程（Prompt Engineering）</a> — 規劃步驟寫在 System Prompt 裡</li><li><a href="#reflection">反思（Reflection）</a>、<a href="#tool-use">工具使用（Tool Use）</a> — 同一週的另外兩種方法</li></ul>
+</article>
+<article class="entry" id="reflection-loop">
+<h2>反思迴圈（Reflection Loop）</h2>
+<p class="meta">來源：<a href="#s6-loop-and-graph">s6</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/concepts/reflection-loop.md">Markdown 原檔</a></p>
+<blockquote>作者 Agent 產生、審查員 Agent 挑錯，反覆修訂直到合格或觸發煞車。</blockquote>
+<h3>重點</h3>
+<ul><li>三步驟：作者 Agent 產生初版 → 審查員 Agent 依品質標準列缺點與修正建議 → 作者修訂後再送審（s6）。</li><li>設計 Agent 時，重點已從寫單次 Prompt 轉向設計 Prompt Loop（s6）。</li><li>成功關鍵一：<b>客觀的放行條件</b>，審查員才知道什麼時候可以放行（s6）。</li><li>成功關鍵二：<b>煞車機制</b>，避免無窮迴圈和浪費 Token（s6）。</li><li>流程是固定的「產生 ⇄ 審查」來回，不會跳到其他步驟（s6，與 Graph 對比）。</li></ul>
+<h3>例子</h3>
+<ul><li>來源未提供課堂實例；本專案簡報的 N3 ⇄ R 事實審查就是一個 Reflection Loop。</li></ul>
+<h3>常見誤區</h3>
+<ul><li>沒有分工、也沒有客觀放行條件時，審查員無從判斷何時可以放行（s6）。</li></ul>
+<h3>相關概念</h3>
+<ul><li><a href="#reflection">反思（Reflection）</a> — 第八週的單一 Agent 版本</li><li><a href="#stopping-conditions">煞車機制（Stopping Conditions）</a> — Loop 必備的煞車</li><li><a href="#graph-workflow">圖形工作流（Graph）</a> — 更有彈性的流程架構</li><li><a href="#harness-engineering">控制工程（Harness Engineering）</a> — Loop 是 Harness 的一部分</li></ul>
+</article>
+<article class="entry" id="graph-workflow">
+<h2>圖形工作流（Graph）</h2>
+<p class="meta">來源：<a href="#s6-loop-and-graph">s6</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/concepts/graph-workflow.md">Markdown 原檔</a></p>
+<blockquote>把流程拆成多個節點，依條件在節點之間前進、跳回或重來。</blockquote>
+<h3>重點</h3>
+<ul><li>每個節點（Node）只專注一個獨立任務，例如 A 寫大綱、B 檢查邏輯漏洞、C 輸出評估報告（s6）。</li><li><b>動態條件跳躍</b>：流程不是直線；在 C 發現原始資料遺漏，可以跳回 B，甚至退回 A，補齊後再往前（s6）。</li><li>和 Loop 的差別：Loop 是固定的「產生 ⇄ 審查」來回；Graph 可以在不同節點間依條件自由跳躍與回溯，彈性更高（s6）。</li><li>簡報 Graph 範例：大綱 → 逐頁內容 → HTML 渲染 → 自動驗證；驗證不過就跳回逐頁內容或大綱（s6）。</li><li>驗證節點檢查：圖片路徑是否斷連結、引用是否精準、版面文字是否溢出（s6）。</li></ul>
+<h3>例子</h3>
+<ul><li>s6 的四節點簡報流程；本專案在它之上加了 Wiki 檢查、大綱檢查與事實審查。</li></ul>
+<h3>常見誤區</h3>
+<ul><li>一開始就畫複雜 Graph。s6 提醒 Loop 能解決的問題不要過度工程化（見 <a href="#over-engineering">過度工程化（Over-engineering）</a>）。</li></ul>
+<h3>相關概念</h3>
+<ul><li><a href="#reflection-loop">反思迴圈（Reflection Loop）</a> — 比 Graph 簡單的固定迴圈</li><li><a href="#human-checkpoint">人類檢查點（Human Checkpoint）</a> — Graph 中人類介入的節點</li><li><a href="#stopping-conditions">煞車機制（Stopping Conditions）</a> — 回跳也需要上限</li><li><a href="#over-engineering">過度工程化（Over-engineering）</a> — 什麼時候不該用 Graph</li></ul>
+</article>
+<article class="entry" id="stopping-conditions">
+<h2>煞車機制（Stopping Conditions）</h2>
+<p class="meta">來源：<a href="#s2-agent-demo-notes">s2</a>、<a href="#s6-loop-and-graph">s6</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/concepts/stopping-conditions.md">Markdown 原檔</a></p>
+<blockquote>事先規定迴圈什麼時候一定要停，避免無限重做和浪費錢。</blockquote>
+<h3>重點</h3>
+<ul><li><b>最大次數限制</b>：例如最多反覆修訂 3～5 次就強制停止（s6）。</li><li><b>資訊不足即停</b>：審查發現缺乏關鍵原始資料時中斷迴圈，請人類補資料（s6）。</li><li><b>成本效益控管</b>：防止無效的重複修訂導致 Token 費用浪費（s6）。</li><li>和「客觀放行條件」搭配：一個決定何時合格，一個決定何時放棄（s6）。</li><li>程式層面的防呆：預設 False 的測試開關，避免誤觸大量 API 呼叫（s2）。</li></ul>
+<h3>例子</h3>
+<ul><li>本專案每個 Loop 最多 3 輪；wiki 和 raw 都沒有的資訊就停下來問人類（CLAUDE.md 5.2，依據 s6）。</li></ul>
+<h3>常見誤區</h3>
+<ul><li>只設放行條件、不設上限：品質一直達不到標準時就會無窮迴圈（s6）。</li></ul>
+<h3>相關概念</h3>
+<ul><li><a href="#reflection-loop">反思迴圈（Reflection Loop）</a> — 煞車用在哪裡</li><li><a href="#token-cost">Token 成本（Token Cost）</a> — 煞車要保護的東西</li><li><a href="#human-checkpoint">人類檢查點（Human Checkpoint）</a> — 資訊不足時把決定交還給人</li></ul>
+</article>
+<article class="entry" id="human-checkpoint">
+<h2>人類檢查點（Human Checkpoint）</h2>
+<p class="meta">來源：<a href="#s4-harness-and-agents-md">s4</a>、<a href="#s5-karpathy-llm-wiki">s5</a>、<a href="#s6-loop-and-graph">s6</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/concepts/human-checkpoint.md">Markdown 原檔</a></p>
+<blockquote>在流程中特意停下來讓人審核的關卡，越早檢查、重做成本越低。</blockquote>
+<h3>重點</h3>
+<ul><li>簡報 Graph 中，<b>大綱生成後</b>是人類管理者的最佳檢查點：在大綱階段修正，可避免之後重做 HTML 的巨大成本（s6）。</li><li>管理者只要掌控「大綱審核」與「最終檢查報告」兩個關卡，中間重複的生成、驗證與修改交給 Agent（s6）。</li><li>員工手冊要求「先計畫後執行」：動手修改或搬檔案前，先提計畫給人審查授權（s4）。</li><li>Karpathy 偏好一次 ingest 一份資料並親自參與：讀摘要、檢查更新、引導重點（s5）。</li></ul>
+<h3>例子</h3>
+<ul><li>檔案分類器：Agent 擬好 5 類分類計畫 → 管理員確認 → 才開始搬檔案（s4）。</li></ul>
+<h3>常見誤區</h3>
+<ul><li>等到最後成品才檢查。越後面發現問題，要重做的東西越多（s6）。</li></ul>
+<h3>相關概念</h3>
+<ul><li><a href="#graph-workflow">圖形工作流（Graph）</a> — 檢查點是 Graph 中的一個節點</li><li><a href="#planning">規劃（Planning）</a> — 計畫就是最適合審的東西</li><li><a href="#stopping-conditions">煞車機制（Stopping Conditions）</a> — 資訊不足時也要交回給人</li></ul>
+</article>
+<article class="entry" id="token-cost">
+<h2>Token 成本（Token Cost）</h2>
+<p class="meta">來源：<a href="#s2-agent-demo-notes">s2</a>、<a href="#s6-loop-and-graph">s6</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/concepts/token-cost.md">Markdown 原檔</a></p>
+<blockquote>Agent 每多一個階段就多呼叫一次模型，用量和費用會倍數成長。</blockquote>
+<h3>重點</h3>
+<ul><li>一般問答只呼叫一次模型；Agent 是多階段架構，每階段都呼叫，Token 呈倍數成長（s2）。</li><li>Groq 免費 API 容易跑到一半因額度中斷；改用較小模型可降低中斷機率；商業級應用要用付費 API（s2）。</li><li>範例程式用預設 False 的測試開關，避免一執行就燒光額度（s2）。</li><li>Loop 要設煞車，防止無效的重複修訂浪費 Token（s6）。</li></ul>
+<h3>例子</h3>
+<ul><li>07C 先打草稿、再生成正文，至少兩次模型呼叫（s2）。</li></ul>
+<h3>常見誤區</h3>
+<ul><li>迴圈設計得越多輪越好——每一輪都要花錢，也可能卡在無窮迴圈（s6）。</li></ul>
+<h3>相關概念</h3>
+<ul><li><a href="#stopping-conditions">煞車機制（Stopping Conditions）</a> — 控制成本的煞車</li><li><a href="#planning">規劃（Planning）</a> — 多階段架構的例子</li><li><a href="#over-engineering">過度工程化（Over-engineering）</a> — 流程越複雜越燒錢</li></ul>
+</article>
+<article class="entry" id="over-engineering">
+<h2>過度工程化（Over-engineering）</h2>
+<p class="meta">來源：<a href="#s3-three-agent-patterns">s3</a>、<a href="#s6-loop-and-graph">s6</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/concepts/over-engineering.md">Markdown 原檔</a></p>
+<blockquote>用不必要的複雜流程去解決簡單問題；原則是能簡單就簡單。</blockquote>
+<h3>重點</h3>
+<ul><li>簡單 Prompt 能一次解決的問題，絕不調用 Loop（s6）。</li><li>標準 Loop 能解決的問題，不要盲目堆疊複雜的 Graph 節點（s6）。</li><li>好的 Agent 流程應該從人類實際處理事情的自然步驟演化而來（s6）。</li><li>第八週作業也強調：重點不是做出非常複雜的系統，而是理解方法並讓它實際運作（s3）。</li></ul>
+<h3>例子</h3>
+<ul><li>選工具的順序：Prompt → Loop → Graph，一層不夠才往下一層（s6）。</li></ul>
+<h3>常見誤區</h3>
+<ul><li>一開始就堆疊複雜的 Graph 節點，沒先確認簡單 Prompt 或標準 Loop 是否已經足夠（s6）。</li></ul>
+<h3>相關概念</h3>
+<ul><li><a href="#prompt-engineering">提示工程（Prompt Engineering）</a>、<a href="#reflection-loop">反思迴圈（Reflection Loop）</a>、<a href="#graph-workflow">圖形工作流（Graph）</a> — 由簡到繁的三層選擇</li><li><a href="#token-cost">Token 成本（Token Cost）</a> — 複雜流程的代價</li></ul>
+</article>
+<article class="entry" id="agents-md">
+<h2>員工手冊（AGENTS.md / CLAUDE.md）</h2>
+<p class="meta">來源：<a href="#s4-harness-and-agents-md">s4</a>、<a href="#s5-karpathy-llm-wiki">s5</a>、<a href="#s6-loop-and-graph">s6</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/concepts/agents-md.md">Markdown 原檔</a></p>
+<blockquote>放在專案資料夾裡的規則檔，告訴 AI 這個專案要做什麼、怎麼做、做到什麼程度。</blockquote>
+<h3>重點</h3>
+<ul><li>常見檔名：agent.md（通用慣例）、claude.md（Claude）、gemini.md（Gemini）；模型載入資料夾時會自動讀取（s4）。Karpathy 也舉 CLAUDE.md、AGENTS.md 為例（s5）。</li><li>好的交辦四要素：<b>成果定義</b>、<b>約束條件</b>、<b>驗收標準</b>、<b>先計畫後執行</b>（s4）。</li><li>在 LLM Wiki 裡它是 schema 層：讓 LLM 成為有紀律的 wiki 維護者，由人和 LLM 一起持續調整（s5）。</li><li>第十週稱它為「專案憲法與員工作業手冊」，規範目錄結構（agent.md、papers/、wiki/、assets/）（s6）。</li></ul>
+<h3>例子</h3>
+<ul><li>約束條件例子：絕對不可刪除原始檔；無法分類的放進「待確認」資料夾（s4）。</li></ul>
+<h3>常見誤區</h3>
+<ul><li>把規則散落在對話裡；s4 指出應寫成規格書，取代散亂的對話提示詞。</li></ul>
+<h3>相關概念</h3>
+<ul><li><a href="#harness-engineering">控制工程（Harness Engineering）</a> — 員工手冊是 Harness 的書面形式</li><li><a href="#llm-wiki">LLM 知識庫（LLM Wiki）</a> — schema 層</li><li><a href="#agent-skills">技能包（Agent Skills）</a> — 手冊寫原則，Skill 寫具體 SOP</li></ul>
+</article>
+<article class="entry" id="agent-skills">
+<h2>技能包（Agent Skills）</h2>
+<p class="meta">來源：<a href="#s4-harness-and-agents-md">s4</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/concepts/agent-skills.md">Markdown 原檔</a></p>
+<blockquote>把試出來的好流程打包成可重複呼叫的 SOP，讓產出品質穩定。</blockquote>
+<h3>重點</h3>
+<ul><li>和 AI 討論、實驗出好的工作流程後，請 AI 把 SOP 打包成 Skill（s4）。</li><li>Skill 可以在同一個專案或跨專案反覆調用（s4）。</li><li>目的：產出的品質與風格不會每次隨機波動（s4）。</li></ul>
+<h3>例子</h3>
+<ul><li>講師把「日系手帳風 HTML 簡報」的生成方法打包成 Skill，之後每次做簡報都照同一套規範（s4）。</li></ul>
+<h3>常見誤區</h3>
+<ul><li>每次都重新口頭描述需求，導致每次產出風格都不一樣（s4）。</li></ul>
+<h3>相關概念</h3>
+<ul><li><a href="#agents-md">員工手冊（AGENTS.md / CLAUDE.md）</a> — 手冊與 Skill 的分工</li><li><a href="#harness-engineering">控制工程（Harness Engineering）</a> — Skill 也是 Harness 的一部分</li></ul>
+</article>
+<article class="entry" id="coding-agent-vs-work-agent">
+<h2>Coding Agent 與 Work Agent</h2>
+<p class="meta">來源：<a href="#s4-harness-and-agents-md">s4</a>、<a href="#s6-loop-and-graph">s6</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/concepts/coding-agent-vs-work-agent.md">Markdown 原檔</a></p>
+<blockquote>Work Agent 在對話框工作，Coding Agent 能操作專案資料夾。</blockquote>
+<h3>重點</h3>
+<ul><li>Work Agent：ChatGPT / Claude 標準對話介面、CoWork、OpenWorker；不能直接讀寫本機資料夾，沒有原生版本控管（s6）。</li><li>Coding Agent：Google AntiGravity、Claude Code、ChatGPT Codex；綁定專案資料夾，可直接讀寫檔案，整合 Git（s6）。</li><li>Coding Agent 的本質不只是寫程式，而是<b>模仿人類操作電腦專案資料夾</b>（s6）。</li><li>指令只是快捷鍵，不用背，直接用口語交代需求即可（s6）。</li><li>需要斷線安全與資料隱私時，可用 OpenWorker + Ollama 跑本地小模型，但表現仍不如頂級雲端模型（s4）。</li></ul>
+<h3>例子</h3>
+<ul><li>建 LLM Wiki、自動產生網頁簡報這類任務適合 Coding Agent（s6）。</li></ul>
+<h3>常見誤區</h3>
+<ul><li>看到 "Coding" 就以為只能寫程式（s6）。</li></ul>
+<h3>相關概念</h3>
+<ul><li><a href="#ai-agent">AI 代理（AI Agent）</a> — 兩者都是 Agent</li><li><a href="#git-version-control">Git 版本控管（Git Version Control）</a> — Coding Agent 的優勢之一</li><li><a href="#tool-use">工具使用（Tool Use）</a> — 專案資料夾就是 Coding Agent 的工具</li></ul>
+</article>
+<article class="entry" id="git-version-control">
+<h2>Git 版本控管（Git Version Control）</h2>
+<p class="meta">來源：<a href="#s5-karpathy-llm-wiki">s5</a>、<a href="#s6-loop-and-graph">s6</a> ｜ 更新：2026-11-23 ｜ <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/wiki/concepts/git-version-control.md">Markdown 原檔</a></p>
+<blockquote>在本機記錄專案每一版的變化，AI 改壞了可以隨時退回。</blockquote>
+<h3>重點</h3>
+<ul><li>Git 是本機的專案歷程追蹤與版本復原；GitHub 是把本機專案推上去的雲端平台（s6）。</li><li>AI 在多輪 HTML 渲染中搞砸檔案時，可以用 Git 復原到之前的好版本（s6）。</li><li>LLM Wiki 本身就是一個 Markdown 的 git repo，免費得到版本歷史、分支與協作（s5）。</li></ul>
+<h3>例子</h3>
+<ul><li>本專案以 <code>git init</code> 建立，完成後推上 GitHub Pages。</li></ul>
+<h3>常見誤區</h3>
+<ul><li>把 Git 和 GitHub 當成同一個東西（s6）。</li></ul>
+<h3>相關概念</h3>
+<ul><li><a href="#coding-agent-vs-work-agent">Coding Agent 與 Work Agent</a> — Coding Agent 深度整合 Git</li><li><a href="#llm-wiki">LLM 知識庫（LLM Wiki）</a> — wiki 就是 git repo</li></ul>
+</article>
+</main>
+</body>
+</html>

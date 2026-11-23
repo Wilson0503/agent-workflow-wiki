@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>流程與紀錄｜AI Agent 工作流程</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="assets/css/deck.css">
+</head>
+<body>
+<main class="page">
+<nav class="top"><a href="index.html">首頁</a><a href="deck/index.html">教學簡報</a><a href="wiki.html">LLM Wiki</a><a href="process.html">流程與紀錄</a></nav>
+<!-- 本檔由 scripts/build_site.py 產生，請勿手動編輯 -->
+<h1>Loop / Graph 設計與實際執行紀錄</h1>
+<article class="entry" id="workflow">
+<h2>Loop / Graph 設計說明</h2>
+<blockquote>這份文件說明本專案「從課程資料到教學簡報」的流程怎麼設計、為什麼這樣設計。<br>實際跑一次的紀錄在 <a href="#run-log"><code>run-log.md</code></a>，反思在 <a href="#reflection"><code>reflection.md</code></a>。</blockquote>
+<h3>1. 流程圖</h3>
+<pre class="mermaid">flowchart TD
+    N0[N0 取得資料&lt;br/&gt;raw/ + sha256] --&gt; N1[N1 Ingest&lt;br/&gt;寫 wiki 來源摘要與概念]
+    N1 --&gt; C1{C1 Wiki 格式檢查&lt;br/&gt;check_wiki.py}
+    C1 -- fail --&gt; N1
+    C1 -- pass --&gt; C1b{C1b Wiki 事實抽查&lt;br/&gt;審查員 Agent：wiki ⇄ raw}
+    C1b -- fail --&gt; N1
+    C1b -- pass --&gt; N2[N2 擬大綱&lt;br/&gt;deck/outline.md]
+    N2 --&gt; C2{C2 大綱檢查&lt;br/&gt;check_deck.py --stage outline}
+    C2 -- 格式/引用錯 --&gt; N2
+    C2 -- wiki 缺內容 --&gt; N1
+    C2 -- pass --&gt; H{{H 人類檢查點&lt;br/&gt;管理者審大綱}}
+    H -- 要修改 --&gt; N2
+    H -- OK --&gt; N3[N3 逐頁內容&lt;br/&gt;deck/content.md 每點附引用]
+    N3 --&gt; R{R 事實審查 Loop&lt;br/&gt;審查員 Agent：簡報 ⇄ wiki}
+    R -- fail，≤3 輪 --&gt; N3
+    R -- wiki 沒有這件事 --&gt; N1
+    R -- pass --&gt; N4[N4 HTML 渲染&lt;br/&gt;deck/index.html]
+    N4 --&gt; C4{C4 驗證&lt;br/&gt;結構＋引用同步＋截圖溢出＋目視}
+    C4 -- 版面/連結 --&gt; N4
+    C4 -- 內容對不上 --&gt; N3
+    C4 -- pass --&gt; N5[N5 發佈&lt;br/&gt;wiki.html、首頁、log、git]</pre>
+<p>文字版：</p>
+<pre>取得資料 → Ingest 寫 Wiki → 格式檢查 → 事實抽查 → 擬大綱 → 大綱檢查 → 【人類審大綱】
+       → 逐頁內容 ⇄ 事實審查（Loop）→ HTML 渲染 → 結構＋截圖驗證 → 發佈</pre>
+<h3>2. 每個節點做什麼</h3>
+<table><thead><tr><th>節點</th><th>誰做</th><th>輸入 → 輸出</th><th>怎麼判定通過</th></tr></thead><tbody>
+<tr><td>N0 取得資料</td><td>人類挑、AI 複製</td><td>課程資料 → <code>raw/</code>、<code>docs/raw.sha256</code></td><td>檔案齊全</td></tr>
+<tr><td>N1 Ingest</td><td>作者 Agent</td><td><code>raw/</code> → <code>wiki/</code>（6 來源摘要＋19 概念＋總覽）</td><td>—</td></tr>
+<tr><td>C1 格式檢查</td><td>腳本</td><td><code>wiki/</code> → 錯誤清單</td><td>frontmatter、每點標來源、來源⇄概念雙向一致、無孤兒頁、raw 雜湊沒變</td></tr>
+<tr><td>C1b 事實抽查</td><td><b>另一個</b>審查員 Agent</td><td><code>wiki/</code>＋<code>raw/</code> → 報告</td><td>沒有「不支持／曲解／標錯來源／外部知識」</td></tr>
+<tr><td>N2 擬大綱</td><td>作者 Agent</td><td><code>wiki/index.md</code> → <code>deck/outline.md</code></td><td>—</td></tr>
+<tr><td>C2 大綱檢查</td><td>腳本</td><td><code>outline.md</code> → 錯誤清單</td><td>12～16 張、每張有引用且存在、19 個概念全被引用</td></tr>
+<tr><td><b>H 人類檢查點</b></td><td>人類</td><td><code>outline.md</code> → OK／修改意見</td><td>人類說 OK</td></tr>
+<tr><td>N3 逐頁內容</td><td>作者 Agent</td><td>大綱＋條目 → <code>deck/content.md</code></td><td>每點 ≤40 字、結尾標 <code><a href="wiki.html#slug">slug</a></code>、引用與大綱一致</td></tr>
+<tr><td>R 事實審查</td><td><b>另一個</b>審查員 Agent</td><td><code>content.md</code>＋條目 → 報告</td><td>每一點都能在它引用的 wiki 條目找到依據</td></tr>
+<tr><td>N4 渲染</td><td>作者 Agent</td><td><code>content.md</code> → <code>deck/index.html</code></td><td>—</td></tr>
+<tr><td>C4 驗證</td><td>腳本＋無頭瀏覽器＋<b>作者看截圖</b></td><td>HTML → 錯誤清單＋截圖</td><td>每頁 <code>data-cites</code> 與 content.md 一致、content.md 每一句都出現在投影片上、assets 路徑與 wiki 錨點都存在、無外部圖片、桌機與手機沒有溢出、圖解文字沒有壓到箭頭</td></tr>
+<tr><td>N5 發佈</td><td>作者 Agent</td><td>全部 → <code>wiki.html</code>、<code>process.html</code>、<code>index.html</code>、log、commit</td><td>所有檢查重跑通過</td></tr>
+</tbody></table>
+<h3>3. 哪些步驟會重複執行？</h3>
+<table><thead><tr><th>Loop</th><th>來回的兩端</th><th>為什麼會重複</th></tr></thead><tbody>
+<tr><td>C1 ↔ N1</td><td>格式檢查 ⇄ 改 wiki</td><td>格式錯誤（字數、來源標註、雙向連結）通常一輪修不完</td></tr>
+<tr><td>C1b ↔ N1</td><td>事實抽查 ⇄ 改 wiki</td><td>審查員找到「wiki 寫了 raw 沒有的事」</td></tr>
+<tr><td>H ↔ N2</td><td>人類 ⇄ 改大綱</td><td>人類對範圍、順序、深淺的意見</td></tr>
+<tr><td>R ↔ N3</td><td>事實審查 ⇄ 改內容</td><td>典型的 Reflection Loop：作者寫、審查員挑錯</td></tr>
+<tr><td>C4 ↔ N4</td><td>驗證 ⇄ 改 HTML</td><td>版面溢出、連結錯</td></tr>
+</tbody></table>
+<h3>4. 哪些地方需要檢查或重新生成？往哪裡跳？</h3>
+<p>這是 Graph 而不是單純 Loop 的原因：<b>錯誤要跳回「錯誤產生的那個節點」</b>，不是只在原地重試。</p>
+<table><thead><tr><th>在哪裡發現</th><th>錯誤類型</th><th>跳回</th></tr></thead><tbody>
+<tr><td>C2</td><td>大綱引用了 wiki 不存在的頁面</td><td><b>N1</b>（wiki 缺內容，先補 wiki）</td></tr>
+<tr><td>R</td><td>簡報寫的事 wiki 沒有</td><td><b>N1</b>；如果 raw 也沒有 → <b>停下來問人類</b></td></tr>
+<tr><td>R</td><td>簡報寫錯 wiki 的意思</td><td>N3</td></tr>
+<tr><td>C4</td><td>版面溢出、連結斷掉</td><td>N4</td></tr>
+<tr><td>C4</td><td>HTML 引用與 content.md 對不上</td><td>N3</td></tr>
+<tr><td>C4 目視</td><td>截圖看到腳本沒抓到的新問題</td><td>先改 <b>render_check.py</b> 讓它能自動抓到，再回 N4</td></tr>
+<tr><td>content 自檢</td><td>想新增大綱沒有的引用或改標題</td><td><b>N2</b>（大綱已經人類核准，不能偷改）</td></tr>
+</tbody></table>
+<h3>5. 煞車（停止條件）</h3>
+<ol><li>每個 Loop 最多 3 輪，第 3 輪還失敗 → 停下回報人類。</li><li>wiki 和 raw 都沒有的資訊 → 不准補寫，停下來請人類補資料。</li><li>同一個錯誤連續出現 2 次 → 不要原地重試，往上游找原因。</li></ol>
+<h3>6. 為什麼這樣設計？</h3>
+<ol><li><b>檢查放在越前面越便宜。</b> s6 說「在大綱階段修正可避免後續重做 HTML 的巨大成本」。同樣的道理往前推：wiki 錯了，後面的大綱、內容、HTML 都會跟著錯，所以在 wiki 這一層就先做事實抽查（C1b）。</li><li><b>人類只出現在一個地方。</b> 依 s6，人類掌握「大綱審核」與「最終檢查報告」兩個關卡就好；中間重複的生成、驗證交給 Agent。最終報告就是 <code>run-log.md</code>。</li><li><b>審查員不能是作者自己。</b> Reflection Loop 的作者和審查員要分工（s6）。作者自己檢查時，最容易漏掉的就是自己腦中的常識被當成資料（見 run-log 的 C1b #1）。</li><li><b>能用腳本檢查的就不用 LLM。</b> 格式、字數、連結、引用同步是確定性的規則，用 Python 檢查既快又不花 Token（s2 的 Token 成本）；LLM 審查員只做腳本做不到的「意思對不對」。</li><li><b>不過度工程化。</b> 只有在「需要跳回不同節點」的地方才用 Graph；N3 ⇄ R 這種固定來回就用最簡單的 Loop（s6：Loop 能解決就不要堆 Graph）。</li></ol>
+<h3>7. 實際執行後對流程的修改（詳見 reflection.md）</h3>
+<table><thead><tr><th>修改</th><th>原因（run-log 證據）</th></tr></thead><tbody>
+<tr><td>新增 <b>C1b Wiki 事實抽查</b> 節點</td><td>C1 腳本只管格式；審查員在 wiki 找到 7 處和 raw 不符</td></tr>
+<tr><td>模板「常見誤區」允許寫「來源未提及」</td><td>7 處中 4 處出在這段：規定至少 1 點，作者就自己補常識</td></tr>
+<tr><td>規則新增「只能用 raw 的內容，檔名與常識不算」</td><td>2 處 EXTERNAL 來自檔名</td></tr>
+<tr><td>H 人類檢查點加「對照作業要求與課程內容」</td><td>人類核准大綱時附上這個條件</td></tr>
+<tr><td>C4 加「作者看截圖」與 SVG 重疊自動偵測</td><td>腳本全過，但目視發現 6 處文字壓線／重疊</td></tr>
+</tbody></table>
+</article>
+<article class="entry" id="run-log">
+<h2>實際執行紀錄（docs/run-log.md）</h2>
+<blockquote>只能追加。每列：時間｜節點｜結果｜說明｜下一步。失敗也要記。<br>日期：2026-11-23。執行者：Claude Code（作者 Agent）＋獨立的審查員 Agent；人類：管理者。</blockquote>
+<h3>討論階段（先討論、後生成）</h3>
+<table><thead><tr><th>時間</th><th>節點</th><th>結果</th><th>說明</th><th>下一步</th></tr></thead><tbody>
+<tr><td>18:50</td><td>討論</td><td>—</td><td>AI 讀完第九、十週資料，提問：主題、資料來源、放置位置、風格。人類選「AI Agent 工作流程」、「AI 上網找」、「獨立 repo」、「科技深色風」</td><td>AI 提計畫</td></tr>
+<tr><td>18:55</td><td>討論</td><td>改方向</td><td>AI 提了 6 篇外部文章（Anthropic、Lilian Weng、ReAct…）。<b>人類改成「用這堂課的上課內容」</b></td><td>重找資料</td></tr>
+<tr><td>18:58</td><td>討論</td><td>—</td><td>AI 在資料夾找到第 7～10 週課程影片整理 6 份；排除期末專案 docx（主題無關）；確認概念清單與大綱方向</td><td>人類回「照你說的」</td></tr>
+</tbody></table>
+<h3>執行階段</h3>
+<table><thead><tr><th>時間</th><th>節點</th><th>結果</th><th>說明</th><th>下一步</th></tr></thead><tbody>
+<tr><td>19:00</td><td>N0 取得資料</td><td>PASS</td><td>6 份檔案複製到 raw/，寫入 docs/raw.sha256</td><td>N1</td></tr>
+<tr><td>19:01</td><td>N1 Ingest</td><td>—</td><td>寫 6 頁來源摘要、19 個概念、overview、index、log；同時記錄轉錄錯誤（LOP、Grave、Graphite Engineering）</td><td>C1</td></tr>
+<tr><td>19:06</td><td>C1 Wiki 檢查 #1</td><td>FAIL（92）</td><td>約 84 個是<b>檢查器 bug</b>：條列結尾「（s6）。」多一個句號，regex 不接受；1 個是 index.md 說明文字的範例 <code><a href="wiki.html#slug">slug</a></code> 被當成連結。真正內容錯誤 8 個 → 見 #2</td><td>修檢查器（不算內容 Loop 輪數）</td></tr>
+<tr><td>19:06</td><td>C1 Wiki 檢查 #2</td><td>FAIL（8）</td><td>3 個定義超過 40 字；rag 宣告 s6 但沒引用；<b>4 個來源⇄概念不一致</b>（概念頁說用了 s4，但 s4 摘要頁沒列該概念，例如 planning、coding-agent-vs-work-agent）</td><td>回 N1 修正</td></tr>
+<tr><td>19:06</td><td>C1 Wiki 檢查 #3</td><td>FAIL（1）</td><td>coding-agent-vs-work-agent 定義縮短後仍 42 字（英文字母也算字數）</td><td>回 N1（N1↔C1 第 2 輪）</td></tr>
+<tr><td>19:06</td><td>C1 Wiki 檢查 #4</td><td>PASS</td><td>WIKI CHECK PASSED（內容修正共 2 輪，未達 3 輪上限）</td><td>C1b</td></tr>
+<tr><td>19:06</td><td>C1b 事實抽查</td><td>進行中</td><td>腳本只管格式，抓不到「wiki 寫錯 raw 的意思」→ 另派<b>獨立審查員 Agent</b> 逐條比對 wiki 與 raw</td><td>等待結果；同時進行 N2</td></tr>
+<tr><td>19:09</td><td>C1b 事實抽查 #1</td><td>FAIL（7）</td><td>審查員檢查 171 個條列點，找到 7 個問題：UNSUPPORTED 3、DISTORTED 1、WRONG_SOURCE 1、EXTERNAL 2。<b>其中 4 個在「常見誤區」段</b>（作者自己推論補常識）；2 個 EXTERNAL 是作者從 raw 以外看來的（ipynb 檔名「員瑛式」、raw 原始檔名「NotebookLM」）</td><td>回 N1</td></tr>
+<tr><td>19:09</td><td>N1 修正</td><td>—</td><td>修 7 處。<b>根本原因</b>：模板規定「常見誤區至少 1 點」，raw 沒講時逼作者硬湊 → 改模板與 CLAUDE.md：「只能寫 raw 有講的，沒有就寫『來源未提及』」，並新增「只能用 raw 的內容，檔名與常識不算來源」；<b>把 C1b 正式加進 Graph</b>（原本只有格式檢查）</td><td>C1 → C1b #2</td></tr>
+<tr><td>19:09</td><td>C1 Wiki 檢查 #5</td><td>PASS</td><td>修改後重跑格式檢查</td><td>C1b #2</td></tr>
+<tr><td>19:09</td><td>C2 大綱檢查 #1</td><td>PASS</td><td>15 張、19 個概念全部被引用、首張 cover／末張 summary、引用全部存在</td><td>等 C1b #2，再進 H</td></tr>
+<tr><td>19:10</td><td>C1b 事實抽查 #2</td><td>PASS</td><td>7 個問題逐一確認已修好；重掃 39 個「例子／常見誤區」無新問題（C1b↔N1 共 2 輪）</td><td>N2 已完成 → H</td></tr>
+<tr><td>19:10</td><td>H 人類檢查點</td><td>等待中</td><td>把 deck/outline.md 交給人類審核</td><td>—</td></tr>
+<tr><td>19:13</td><td>H 人類檢查點</td><td>PASS（附條件）</td><td>人類回覆：「OK，需確認跟作業要求以及課程內容相符就繼續」→ AI 做下方對照</td><td>對照</td></tr>
+<tr><td>19:13</td><td>H 對照：作業要求</td><td>PASS</td><td>自選主題＋先討論後生成＋≥5 篇 ✔（6 篇）；初學者可懂的教學簡報 ✔（S02 從聊天 AI 切入、S14 測驗）；loop/graph 說明 ✔（docs/workflow.md：重複步驟、檢查與跳回點、理由）；執行與檢查紀錄 ✔（本檔）；反思 ✔（待完成後依本檔寫 docs/reflection.md）；Wiki⇄簡報明確對應 ✔（每頁 data-cites）</td><td>—</td></tr>
+<tr><td>19:13</td><td>H 對照：第十週課程</td><td>PASS＋1 補強</td><td>s6 4.1 風格與版面定位 ✔（科技深色、演講演示型＋講義模式）；4.2 Node1 大綱＋人類檢查點 ✔、Node2 逐頁內容 ✔、Node3 渲染 ✔、Node4 驗證「圖片路徑／引用／文字溢出」並跳回 ✔；2.1 煞車 3～5 次 ✔（取 3）；3.2 先訪談再生 agent.md ✔；4.3 Git ✔。<b>補強</b>：C4 必須明確檢查 assets 路徑（原本只寫「連結」）</td><td>N3</td></tr>
+<tr><td>19:17</td><td>N3 逐頁內容</td><td>—</td><td>寫 deck/content.md 15 頁；content 自檢一次 PASS。另做<b>突變測試</b>：故意放 4 種錯誤（超長、缺引用、偷加引用、引用不在本頁），檢查器全部抓到（第一次超長測試句剛好 40 字未觸發，加長後抓到）</td><td>R</td></tr>
+<tr><td>19:17</td><td>R 事實審查 #1</td><td>FAIL（6＋3 建議）</td><td>新的審查員 Agent 檢查 84 點：DISTORTED 4（「免費 API」擴大成全部、S12「人類只審一次」與 S11「兩關」矛盾、S12 把 7 處不符全說成「raw 沒講」實際只有 5 處、S13「一定要靠 Coding Agent」是推論）；UNSUPPORTED 2（S15 小結引用 overview，但 overview 沒寫，應引 s6）；教學建議 3（System Prompt、Token 未解釋；S12 出現 raw／C1b／R 內部代號）</td><td>回 N3</td></tr>
+<tr><td>19:17</td><td>N3 修正</td><td>—</td><td>9 點全部採納。<b>觀察：錯誤又集中在作者「自己概括」的句子</b>（統計數字、小結、因果推論），和 Wiki 階段「常見誤區」出錯的原因相同</td><td>content 自檢 → R #2</td></tr>
+<tr><td>19:18</td><td>R 事實審查 #2</td><td>PASS</td><td>6 個問題與 3 個建議逐一確認已修好；重掃 85 點，0 問題（N3↔R 共 2 輪）</td><td>N4</td></tr>
+<tr><td>19:26</td><td>N4 HTML 渲染</td><td>—</td><td>依 content.md 寫 deck/index.html（15 頁、inline SVG 圖解）、deck.css、deck.js；寫 build_site.py 產生 wiki.html、process.html</td><td>C4</td></tr>
+<tr><td>19:26</td><td>C4 結構 #1</td><td>FAIL（1）</td><td>簡報「首頁」按鈕指向還不存在的 index.html（<b>節點順序問題</b>：首頁原本排在 N5）</td><td>先建首頁</td></tr>
+<tr><td>19:26</td><td>C4 結構 #2</td><td>PASS</td><td>另做突變測試：改掉一句話、偷加引用、換 CSS 路徑、錨點拼錯 → 6 個錯誤全部抓到</td><td>C4 截圖</td></tr>
+<tr><td>19:26</td><td>C4 截圖 #1</td><td>腳本 PASS／目視 FAIL</td><td>render_check.py（溢出、壓頁尾、鍵盤、講義模式、手機橫捲）全過，但<b>作者看截圖</b>發現：S07、S12 圖解文字壓在箭頭線上；內容垂直置中造成標題下大片空白；S11 兩行標籤讓柱子沒對齊；S01 中文用了等寬字。<b>腳本只檢查「超出邊界」，沒檢查「元素互相重疊」</b></td><td>把目視發現的問題寫成自動檢查</td></tr>
+<tr><td>19:26</td><td>C4 截圖 #2</td><td>FAIL（6）</td><td>新增 SVG 重疊偵測（取樣箭頭路徑上的點，看是否落在文字框內＋文字互相重疊），<b>正好抓到目視看到的問題，另外多抓到 1 個</b>（「只在這裡／停下來問人」兩行互疊）</td><td>回 N4（C4↔N4 第 1 輪）</td></tr>
+<tr><td>19:26</td><td>C4 截圖 #3</td><td>PASS</td><td>移動標籤、S12 圖整體下移 20、取消垂直置中、S11 改單行標籤；目視：S05、S13 卡片字太小、S12 貼近頁尾</td><td>回 N4（第 2 輪，純版面微調）</td></tr>
+<tr><td>19:26</td><td>C4 截圖 #4</td><td>PASS</td><td>放大卡片字級、縮小 S12 圖、加高階梯；目視 15 頁＋手機皆可接受（C4↔N4 共 3 輪＝上限，最後一輪通過）</td><td>N5</td></tr>
+<tr><td>19:28</td><td>更正</td><td>—</td><td>更正 C1 #1 的數字：92 個錯誤＝檢查器 bug 84 個（regex 83＋index 範例 1）＋真正內容錯誤 8 個。原紀錄「約 84＋1」算錯，依規則不改舊紀錄，在此更正</td><td>—</td></tr>
+<tr><td>19:30</td><td>N5 發佈</td><td>PASS</td><td>build_site 產生 wiki.html、process.html（mermaid 正常渲染、無 console error）；寫 README、docs/reflection.md、docs/submission.md；最終重跑：WIKI CHECK PASSED、DECK CHECK PASSED、RENDER CHECK PASSED</td><td>待人類建立 GitHub repo 後 push</td></tr>
+</tbody></table>
+</article>
+<article class="entry" id="reflection">
+<h2>反思</h2>
+<blockquote>根據 <a href="#run-log"><code>run-log.md</code></a> 的實際紀錄撰寫（2026-11-23，一次完整執行）。</blockquote>
+<h3>0. 這次執行的數字</h3>
+<table><thead><tr><th>節點</th><th>執行次數</th><th>抓到的問題</th><th>問題從哪個節點產生</th></tr></thead><tbody>
+<tr><td>C1 Wiki 格式檢查</td><td>5 次</td><td>8 個內容錯誤（另有 84 個是檢查器自己的 bug）</td><td>N1</td></tr>
+<tr><td>C1b Wiki 事實抽查</td><td>2 輪</td><td>7 個（不支持 3、曲解 1、標錯來源 1、外部知識 2）</td><td>N1</td></tr>
+<tr><td>C2 大綱檢查</td><td>1 次</td><td>0</td><td>—</td></tr>
+<tr><td>H 人類檢查點</td><td>1 次</td><td>附條件通過：要求對照作業與課程內容 → 補強 1 處（C4 要明確檢查 assets 路徑）</td><td>N2</td></tr>
+<tr><td>R 簡報事實審查</td><td>2 輪</td><td>6 個＋3 個教學建議</td><td>N3</td></tr>
+<tr><td>C4 結構檢查</td><td>2 次</td><td>1 個斷連結</td><td>節點順序</td></tr>
+<tr><td>C4 截圖＋目視</td><td>4 次</td><td>目視 4 類版面問題 → 自動檢查抓到 6 處</td><td>N4</td></tr>
+</tbody></table>
+<h3>1. 哪一個節點最常出錯？</h3>
+<p><b>N1 Ingest（把原始資料寫成 Wiki）</b>。進入下游之前，就有 15 個問題出自這個節點：格式 8 個、事實 7 個。</p>
+<p>更具體地說，錯誤不是平均分布的，而是集中在<b>作者要「自己歸納」的地方</b>：</p>
+<ul><li>Wiki 的 7 個事實錯誤中，有 4 個出在「常見誤區」段落。原因是模板規定「至少寫 1 點」，原始資料沒講的時候，作者（AI）就用自己的常識補了一句，看起來很合理，但 raw 裡沒有。</li><li>有 2 個是「外部知識」：作者看過資料夾裡別的檔名（ipynb 檔名、raw 的原始檔名），就把這些資訊寫進了 wiki。</li><li>到了簡報階段（N3），同樣的模式又出現：R 抓到的 6 個問題，全都出在<b>統計數字、小結、因果推論</b>這類作者自己概括的句子。例如把 7 處不符都說成「raw 沒講的事」，實際上只有 5 處；把「Groq 免費 API」擴大成「免費 API」。</li></ul>
+<p>結論：最容易出錯的不是「抄錯」，而是「<b>幫忙多說一句</b>」。</p>
+<h3>2. 發現問題後，把檢查往前移到了哪一個步驟？</h3>
+<p>原本只有一個事實審查（R），放在逐頁內容（N3）之後。這次把事實檢查<b>往前移到 Wiki 這一層</b>，就在 N1 Ingest 之後、擬大綱之前，新增 <b>C1b Wiki 事實抽查</b>，由另一個審查員 Agent 逐條比對 wiki 和 raw。</p>
+<p>為什麼要往前移：</p>
+<ul><li>Wiki 是後面所有節點唯一的知識來源。wiki 裡多出的一句常識，會被大綱引用、被逐頁內容改寫、被渲染成 HTML。到 R 才發現的話，要回頭改 wiki、大綱、內容三層。</li><li>實際結果支持這個做法：C1b 修好 7 處之後，R 抓到的 6 個問題<b>沒有一個是從 wiki 繼承下來的</b>，全都是 N3 自己產生的。也就是說，wiki 層的錯誤在進入簡報之前就被攔下了。</li><li>這和課程說的道理相同：s6 說在大綱階段修正，可以避免重做 HTML 的巨大成本。同樣的邏輯再往上推一層，就是先把 wiki 修對。</li></ul>
+<p>另外兩處也做了「檢查前移」：</p>
+<ul><li><b>把規則寫進模板（N1 之前）</b>：與其事後抓「常見誤區」亂寫，不如在模板裡就允許寫「來源未提及」，並在 CLAUDE.md 寫明「只能用 raw 的內容，檔名與常識不算來源」，從源頭消除硬湊的動機。</li><li><b>人類檢查點加了對照</b>：你核准大綱時附了條件，要先「確認跟作業要求以及課程內容相符」。這次對照抓到大綱和流程沒有明確檢查 assets 路徑，在 HTML 還沒寫之前就補上了。</li></ul>
+<h3>3. 有沒有因此修改 workflow / graph？為什麼？</h3>
+<p>有，共 4 處，都寫進了 <code>CLAUDE.md</code> 與 <code>workflow.md</code>：</p>
+<ol><li><b>Graph 新增 C1b 節點與回跳邊（C1b → N1）</b>。原因：C1 腳本只能檢查格式、字數、連結這類確定性規則，判斷不了「意思對不對」。這件事需要 LLM 審查員，而且不能由作者自己審自己：自己腦中的常識，作者自己不會覺得是錯的。</li><li><b>修改 N1 的模板規則</b>。原因：「至少 1 點」這種硬性下限，會逼 AI 在沒有資料時編內容。把出錯的「動機」移除，比在下游一直抓錯更便宜。</li><li><b>C4 新增「作者看截圖」，並把目視發現的問題寫成自動檢查</b>。原因：render_check 第一次就全過，但看截圖發現圖解文字壓在箭頭上。腳本只檢查「有沒有超出邊界」，沒有檢查「元素之間有沒有重疊」。新增 SVG 重疊偵測後，它正好抓到眼睛看到的那幾處，還多抓到 1 處。規則因此改成：<b>目視發現新類型的錯誤，要先讓腳本能抓到，再去修</b>。這樣下次不用靠人眼。</li><li><b>H 人類檢查點加入「對照作業與課程」</b>。原因：人類在這一關提出的要求，本身就是一種檢查標準，應該固定下來，而不是每次靠記憶。</li></ol>
+<p><b>沒有改的部分</b>（避免過度工程化）：</p>
+<ul><li>N3 ⇄ R 仍是最簡單的 Reflection Loop，兩輪就通過，不需要再拆節點。</li><li>C2 大綱檢查一次就過，所以沒有再加複雜規則。</li><li>每個 Loop 最多 3 輪的煞車只觸發到 C4（第 3 輪通過），維持不變。</li></ul>
+<h3>4. 其他發現</h3>
+<ul><li><b>檢查器本身也會錯</b>。C1 第一次報 92 個錯誤，其中 84 個是檢查器的 bug（83 個是 regex 不接受「（s6）。」結尾的句號，1 個是說明文字被當成連結）。所以後來每寫一個檢查器，都做了<b>突變測試</b>：故意放錯，看它抓不抓得到。content 檢查放 4 種錯、HTML 檢查放 4 種錯，全部抓到。</li><li><b>「一次就通過」反而要懷疑</b>。content 自檢和 render_check 都是第一次就全過。前者經突變測試證明檢查器有效；後者經目視證明檢查器有漏洞。</li><li><b>人類最有價值的一次介入是在討論階段</b>：你把資料來源從「網路文章」改成「這堂課的上課內容」。這個決定改變了整個 wiki 的範圍，是 AI 自己不會做的選擇。</li></ul>
+</article>
+</main>
+<script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";mermaid.initialize({startOnLoad:true,theme:"dark"});</script>
+</body>
+</html>

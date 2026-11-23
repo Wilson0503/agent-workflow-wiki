@@ -37,7 +37,7 @@ raw/  ──(N1 ingest)──▶  wiki/  ──(N2–N4 deck graph)──▶  de
 agent-workflow-wiki/
 ├── CLAUDE.md / AGENTS.md / README.md
 ├── index.html                 ← 首頁：簡報、Wiki、流程說明的入口
-├── wiki.html                  ← 由 scripts/build_wiki_html.py 產生（禁止手改）
+├── wiki.html / process.html   ← 由 scripts/build_site.py 產生（禁止手改）
 ├── raw/sN_wNN_<名稱>.txt      ← 原始資料（唯讀）
 ├── wiki/
 │   ├── index.md               ← 總目錄（每次 ingest 必更新）
@@ -56,8 +56,9 @@ agent-workflow-wiki/
 │   ├── wikilib.py             ← 共用解析
 │   ├── check_wiki.py          ← C1：Wiki 檢查
 │   ├── check_deck.py          ← C2 / C4：大綱、內容、HTML 檢查（--stage outline|content|html）
-│   ├── render_check.py        ← C4：用無頭瀏覽器截圖、偵測文字溢出
-│   └── build_wiki_html.py     ← 產生 wiki.html
+│   ├── html_checks.py         ← C4：HTML 結構、資產路徑、引用同步（由 check_deck 呼叫）
+│   ├── render_check.py        ← C4：用 Chrome 截圖、偵測溢出／壓頁尾／圖解文字壓線
+│   └── build_site.py          ← 產生 wiki.html、process.html
 └── docs/
     ├── workflow.md            ← loop / graph 設計說明（流程圖）
     ├── run-log.md             ← 實際執行與檢查紀錄（只能追加）
@@ -169,8 +170,8 @@ N0 取得資料 → N1 Ingest → C1 Wiki 檢查 ──fail──▶ N1
 | N3 逐頁內容 | `outline.md`＋引用的條目 | `deck/content.md` | `check_deck.py --stage content` 通過 |
 | R 事實審查 | `content.md`＋引用的條目 | 審查報告 | 審查員回 `PASS`（**審查員必須是另一個 Agent，不能自己審自己**） |
 | N4 渲染 | `content.md` | `deck/index.html` | — |
-| C4 驗證 | `deck/index.html` | 錯誤清單＋截圖 | `check_deck.py --stage html` 與 `render_check.py` 都通過 |
-| N5 發佈 | 全部 | `index.html`、`wiki.html`、log、commit | `python scripts/build_wiki_html.py` 後所有檢查重跑通過 |
+| C4 驗證 | `deck/index.html` | 錯誤清單＋截圖 | `check_deck.py --stage html` 與 `render_check.py` 都通過，**且作者逐張看過 `docs/screenshots/`**；目視發現新類型的錯誤，要先寫成 render_check 的自動檢查再修 |
+| N5 發佈 | 全部 | `index.html`、`wiki.html`、`process.html`、log、commit | `python scripts/build_site.py` 後所有檢查重跑通過 |
 
 ### 5.2 煞車（停止條件）
 
@@ -186,7 +187,7 @@ N0 取得資料 → N1 Ingest → C1 Wiki 檢查 ──fail──▶ N1
 
 ## 6. 簡報規格（科技深色風）
 
-- 只用 `assets/css/deck.css`、`assets/js/deck.js`；HTML 內不可寫 `<style>` 或 `style=""`。
+- 只用 `assets/css/deck.css`、`assets/js/deck.js`；HTML 內不可寫 `<style>` 或 `style=""`。外部資源只允許 Google Fonts，以及 `process.html` 用來畫流程圖的 mermaid CDN。
 - 字體：`Noto Sans TC`（內文）、`JetBrains Mono`（程式感標籤），Google Fonts 載入。
 - 色票只能用 CSS `:root` 已定義的變數，不可新增色碼。
 - 每張投影片 `<section class="slide" data-cites="slug-a slug-b">`，`data-cites` 必須與 `content.md` 該頁的引用一致；頁尾顯示引用 chip，連到 `../wiki.html#slug`。
@@ -202,7 +203,7 @@ N0 取得資料 → N1 Ingest → C1 Wiki 檢查 ──fail──▶ N1
 2. ❌ 在 wiki 或簡報放入 raw 裡沒有的知識（不要自己補充業界資料）。
 3. ❌ 跳過人類檢查點 H 直接做 N3。
 4. ❌ 由寫內容的同一個 Agent 自己做事實審查。
-5. ❌ 手改 `wiki.html`；改 `run-log.md`、`log.md` 的舊紀錄。
+5. ❌ 手改 `wiki.html`、`process.html`；改 `run-log.md`、`log.md` 的舊紀錄。
 6. ❌ 放入 API 金鑰、密碼、他人個資。
 
 ---
@@ -213,4 +214,4 @@ N0 取得資料 → N1 Ingest → C1 Wiki 檢查 ──fail──▶ N1
 - [ ] `python scripts/check_deck.py --stage html` → `DECK CHECK PASSED`
 - [ ] `python scripts/render_check.py` → `RENDER CHECK PASSED`
 - [ ] 人類檢查點與事實審查都有記錄在 `docs/run-log.md`
-- [ ] `index.html` 能連到簡報、`wiki.html`、`docs/workflow.md`
+- [ ] `index.html` 能連到簡報、`wiki.html`、`process.html`

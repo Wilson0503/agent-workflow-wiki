@@ -23,7 +23,7 @@ flowchart TD
     R -- fail，≤3 輪 --> N3
     R -- wiki 沒有這件事 --> N1
     R -- pass --> N4[N4 HTML 渲染<br/>deck/index.html]
-    N4 --> C4{C4 驗證<br/>結構＋引用同步＋截圖溢出}
+    N4 --> C4{C4 驗證<br/>結構＋引用同步＋截圖溢出＋目視}
     C4 -- 版面/連結 --> N4
     C4 -- 內容對不上 --> N3
     C4 -- pass --> N5[N5 發佈<br/>wiki.html、首頁、log、git]
@@ -50,8 +50,8 @@ flowchart TD
 | N3 逐頁內容 | 作者 Agent | 大綱＋條目 → `deck/content.md` | 每點 ≤40 字、結尾標 `[[slug]]`、引用與大綱一致 |
 | R 事實審查 | **另一個**審查員 Agent | `content.md`＋條目 → 報告 | 每一點都能在它引用的 wiki 條目找到依據 |
 | N4 渲染 | 作者 Agent | `content.md` → `deck/index.html` | — |
-| C4 驗證 | 腳本＋無頭瀏覽器 | HTML → 錯誤清單＋截圖 | 每頁 `data-cites` 與 content.md 一致、連結存在、無外部圖片、桌機與手機都沒有文字溢出 |
-| N5 發佈 | 作者 Agent | 全部 → `wiki.html`、`index.html`、log、commit | 所有檢查重跑通過 |
+| C4 驗證 | 腳本＋無頭瀏覽器＋**作者看截圖** | HTML → 錯誤清單＋截圖 | 每頁 `data-cites` 與 content.md 一致、content.md 每一句都出現在投影片上、assets 路徑與 wiki 錨點都存在、無外部圖片、桌機與手機沒有溢出、圖解文字沒有壓到箭頭 |
+| N5 發佈 | 作者 Agent | 全部 → `wiki.html`、`process.html`、`index.html`、log、commit | 所有檢查重跑通過 |
 
 ## 3. 哪些步驟會重複執行？
 
@@ -74,6 +74,7 @@ flowchart TD
 | R | 簡報寫錯 wiki 的意思 | N3 |
 | C4 | 版面溢出、連結斷掉 | N4 |
 | C4 | HTML 引用與 content.md 對不上 | N3 |
+| C4 目視 | 截圖看到腳本沒抓到的新問題 | 先改 **render_check.py** 讓它能自動抓到，再回 N4 |
 | content 自檢 | 想新增大綱沒有的引用或改標題 | **N2**（大綱已經人類核准，不能偷改） |
 
 ## 5. 煞車（停止條件）
@@ -89,3 +90,13 @@ flowchart TD
 3. **審查員不能是作者自己。** Reflection Loop 的作者和審查員要分工（s6）。作者自己檢查時，最容易漏掉的就是自己腦中的常識被當成資料（見 run-log 的 C1b #1）。
 4. **能用腳本檢查的就不用 LLM。** 格式、字數、連結、引用同步是確定性的規則，用 Python 檢查既快又不花 Token（s2 的 Token 成本）；LLM 審查員只做腳本做不到的「意思對不對」。
 5. **不過度工程化。** 只有在「需要跳回不同節點」的地方才用 Graph；N3 ⇄ R 這種固定來回就用最簡單的 Loop（s6：Loop 能解決就不要堆 Graph）。
+
+## 7. 實際執行後對流程的修改（詳見 reflection.md）
+
+| 修改 | 原因（run-log 證據） |
+|---|---|
+| 新增 **C1b Wiki 事實抽查** 節點 | C1 腳本只管格式；審查員在 wiki 找到 7 處和 raw 不符 |
+| 模板「常見誤區」允許寫「來源未提及」 | 7 處中 4 處出在這段：規定至少 1 點，作者就自己補常識 |
+| 規則新增「只能用 raw 的內容，檔名與常識不算」 | 2 處 EXTERNAL 來自檔名 |
+| H 人類檢查點加「對照作業要求與課程內容」 | 人類核准大綱時附上這個條件 |
+| C4 加「作者看截圖」與 SVG 重疊自動偵測 | 腳本全過，但目視發現 6 處文字壓線／重疊 |

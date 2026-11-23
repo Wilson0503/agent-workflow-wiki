@@ -105,6 +105,7 @@ def check_content(outline):
         if o and set(cites) != set(o["cites"]):
             err(f"content.md {sid}: 引用 {sorted(cites)} 與大綱 {sorted(o['cites'])} 不一致 → 新增引用要回 N2")
         bl = [l[2:].strip() for l in lines if l.startswith("- ") and not re.match(r"^- (引用|講者備註|圖解|答案)：", l)]
+        texts = []
         if len(bl) > MAX_BULLETS:
             err(f"content.md {sid}: 條列 {len(bl)} 點，超過 {MAX_BULLETS} 點")
         for b in bl:
@@ -116,9 +117,11 @@ def check_content(outline):
                 if c not in cites:
                     err(f"content.md {sid}: 條列引用 [[{c}]] 不在本頁「引用」清單")
             text = b[: m.start()].strip()
+            texts.append(text)
             if len(text) > MAX_BULLET_LEN:
                 err(f"content.md {sid}: 條列 {len(text)} 字，超過 {MAX_BULLET_LEN} 字：{text[:20]}…")
-        result[sid] = {"title": title, "cites": cites}
+        answers = [l[len("- 答案："):].strip() for l in lines if l.startswith("- 答案：")]
+        result[sid] = {"title": title, "cites": cites, "bullets": texts, "answers": answers}
     return result
 
 

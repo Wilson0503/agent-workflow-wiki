@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Agent 怎麼做事？從 Loop 到 Graph｜教學簡報</title>
+<meta name="description" content="給初學者的 AI Agent 教學簡報：Agent = Model + Harness、Reflection Loop、Graph、煞車機制與人類檢查點。內容全部來自本專案的 LLM Wiki。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="../assets/css/deck.css">
+</head>
+<body>
+<!-- 本檔由 N4 依 deck/content.md 產生；每頁 data-cites 必須與 content.md 一致（scripts/check_deck.py --stage html） -->
+<svg class="defs" width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <marker id="arrow-flow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mf" d="M0 0 L10 5 L0 10 z"/></marker>
+    <marker id="arrow-back" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mb" d="M0 0 L10 5 L0 10 z"/></marker>
+  </defs>
+</svg>
+
+<div class="deck-page">
+<nav class="route" aria-label="投影片路線圖"></nav>
+
+<main class="deck">
+
+<!-- S01 -->
+<section class="slide cover" id="S01" data-cites="overview">
+  <h1>AI Agent 怎麼做事？</h1>
+  <p class="sub">從 Loop 到 Graph：看懂 AI Agent 安排步驟的方法</p>
+  <ul class="questions">
+    <li><span class="q">問題一</span>：Agent 到底是什麼？</li>
+    <li><span class="q">問題二</span>：它怎麼安排、檢查自己的步驟？</li>
+    <li><span class="q">問題三</span>：人類應該在哪裡出手？</li>
+  </ul>
+  <aside class="speaker">講者備註：整份簡報的內容都來自本專案的 LLM Wiki，每頁右下角標出引用的條目。</aside>
+  <footer><span class="cites"><a class="cite" href="../wiki.html#overview">overview</a></span><span class="num">01</span></footer>
+</section>
+
+<!-- S02 -->
+<section class="slide" id="S02" data-cites="ai-agent">
+  <h2>聊天 AI 和 Agent 差在哪？</h2>
+  <div class="body">
+    <div class="side">
+      <h3>聊天 AI</h3>
+      <p>一問一答，全程需要人在旁邊</p>
+    </div>
+    <div class="side agent">
+      <h3>AI Agent</h3>
+      <ul class="points">
+        <li>多步驟自己執行，交代完可以離場</li>
+        <li>Agent 能讀寫檔案、建資料夾、調用工具</li>
+        <li>產出從「一段回答」變成「完整專案成果」</li>
+      </ul>
+    </div>
+  </div>
+  <p class="bottomline">人的角色：從「打工仔」變成下指令的「老闆」</p>
+  <footer><span class="cites"><a class="cite" href="../wiki.html#ai-agent">ai-agent</a></span><span class="num">02</span></footer>
+</section>
+
+<!-- S03 -->
+<section class="slide" id="S03" data-cites="ai-agent harness-engineering">
+  <h2>Agent = Model + Harness</h2>
+  <div class="body">
+    <div class="harness-frame">
+      <span class="tag">Harness</span>
+      <div class="core"><b>Model</b><br>理解與生成語言的大腦</div>
+      <ul>
+        <li>包含做事方法、檢查機制、工具介面</li>
+      </ul>
+    </div>
+    <ul class="points">
+      <li><b>Model</b>：理解與生成語言的大腦</li>
+      <li><b>Harness</b>：告訴 AI 如何按步驟做事的規範與流程</li>
+      <li>頂級模型差距已縮小，勝負關鍵在 Harness</li>
+    </ul>
+  </div>
+  <aside class="speaker">講者備註：學這些名詞是為了「出外不被話術欺騙」。</aside>
+  <footer><span class="cites"><a class="cite" href="../wiki.html#ai-agent">ai-agent</a><a class="cite" href="../wiki.html#harness-engineering">harness-engineering</a></span><span class="num">03</span></footer>
+</section>
+
+<!-- S04 -->
+<section class="slide" id="S04" data-cites="prompt-engineering context-engineering rag llm-wiki">
+  <h2>給 AI 對的資訊：Prompt 與 Context</h2>
+  <div class="layers">
+    <div class="layer">
+      <h3>Prompt Engineering</h3>
+      <p>設計怎麼問，多輪討論修正</p>
+    </div>
+    <div class="layer">
+      <h3>Context Engineering</h3>
+      <p>給足正確的背景資料。資料不夠時 AI 只能猜，容易產生幻覺</p>
+      <div class="split">
+        <div><b>RAG</b>：提問時才檢索段落，知識不會累積</div>
+        <div><b>LLM Wiki</b>：先整理成互連頁面，持續更新</div>
+      </div>
+    </div>
+  </div>
+  <footer><span class="cites"><a class="cite" href="../wiki.html#prompt-engineering">prompt-engineering</a><a class="cite" href="../wiki.html#context-engineering">context-engineering</a><a class="cite" href="../wiki.html#rag">rag</a><a class="cite" href="../wiki.html#llm-wiki">llm-wiki</a></span><span class="num">04</span></footer>
+</section>
+
+<!-- S05 -->
+<section class="slide" id="S05" data-cites="reflection tool-use planning">
+  <h2>三種基本做事方法</h2>
+  <div class="trio">
+    <div class="item"><h3>Reflection</h3><p>先產生結果，再自己檢查、修改</p></div>
+    <div class="item"><h3>Tool Use</h3><p>依需求選工具，例如計算機、搜尋</p></div>
+    <div class="item"><h3>Planning</h3><p>先拆解步驟，再照計畫一步步做</p></div>
+  </div>
+  <p class="bottomline">第八週範例：07A 反思、07B 飲料店、07C 規劃</p>
+  <footer><span class="cites"><a class="cite" href="../wiki.html#reflection">reflection</a><a class="cite" href="../wiki.html#tool-use">tool-use</a><a class="cite" href="../wiki.html#planning">planning</a></span><span class="num">05</span></footer>
+</section>
+
+<!-- S06 -->
+<section class="slide" id="S06" data-cites="planning prompt-engineering">
+  <h2>AI 的「思考」其實是打草稿</h2>
+  <div class="body stack">
+    <ul class="points">
+      <li>AI 的思考沒有神秘靈魂，本質就是打草稿</li>
+      <li>步驟是人用 System Prompt（事先給的規則）教的</li>
+      <li>教步驟的 Prompt 也別寫太長，模型可能吃不下</li>
+    </ul>
+    <ol class="flow" aria-label="07C 打草稿四步驟">
+      <li><span class="mono">1</span>確認事實</li>
+      <li><span class="mono">2</span>評估失落點</li>
+      <li><span class="mono">3</span>發想幽默切入點</li>
+      <li><span class="mono">4</span>生成正文</li>
+    </ol>
+  </div>
+  <aside class="speaker">講者備註：07C 是「把倒楣事正向轉化」的思考生成器。</aside>
+  <footer><span class="cites"><a class="cite" href="../wiki.html#planning">planning</a><a class="cite" href="../wiki.html#prompt-engineering">prompt-engineering</a></span><span class="num">06</span></footer>
+</section>
+
+<!-- S07 -->
+<section class="slide" id="S07" data-cites="reflection-loop reflection">
+  <h2>串起來 ①：Reflection Loop</h2>
+  <div class="body wide-left">
+    <ul class="points">
+      <li>① 作者 Agent 產生初版</li>
+      <li>② 審查員 Agent 依標準列出缺點與建議</li>
+      <li>③ 作者修訂後再送審，反覆來回</li>
+      <li>關鍵：要有客觀的放行條件</li>
+      <li>第八週是自己反思；這裡把作者和審查員分開</li>
+    </ul>
+    <svg class="diagram" viewBox="0 0 470 270" role="img" aria-label="作者與審查員的反思迴圈">
+      <g class="node"><rect x="20" y="60" width="140" height="56" rx="10"/><text x="90" y="88">作者 Agent</text></g>
+      <g class="node check"><rect x="260" y="60" width="140" height="56" rx="10"/><text x="330" y="88">審查員 Agent</text></g>
+      <path class="fwd" d="M90 60 C130 4, 290 4, 330 58"/>
+      <text class="lbl-flow" x="210" y="50">送審</text>
+      <path class="ret" d="M300 116 C260 182, 130 182, 92 120"/>
+      <text class="lbl-back" x="196" y="202">未達標：列缺點 → 修訂</text>
+      <path class="fwd" d="M372 116 L372 196"/>
+      <g class="node done"><rect x="300" y="198" width="150" height="46" rx="10"/><text x="375" y="221">達到放行條件</text></g>
+    </svg>
+  </div>
+  <footer><span class="cites"><a class="cite" href="../wiki.html#reflection-loop">reflection-loop</a><a class="cite" href="../wiki.html#reflection">reflection</a></span><span class="num">07</span></footer>
+</section>
+
+<!-- S08 -->
+<section class="slide" id="S08" data-cites="stopping-conditions token-cost">
+  <h2>迴圈一定要有煞車</h2>
+  <div class="body wide-left">
+    <ul class="brakes">
+      <li><i class="lamp"></i><div><b>最大次數</b><span>例如最多修訂 3～5 次就強制停</span></div></li>
+      <li><i class="lamp"></i><div><b>資訊不足即停</b><span>缺原始資料就請人類補</span></div></li>
+      <li><i class="lamp"></i><div><b>成本控管</b><span>避免無效重複修訂浪費 Token</span></div></li>
+    </ul>
+    <div class="side">
+      <h3>為什麼會燒錢？</h3>
+      <ul class="points">
+        <li>Agent 每多一階段就多呼叫一次模型</li>
+        <li>例如 Groq 免費 API，容易跑到一半因額度中斷</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="speaker">講者備註：Token 可以想成模型的用量；每呼叫一次模型就消耗一次，Agent 階段越多，用量和費用就倍數成長。</aside>
+  <footer><span class="cites"><a class="cite" href="../wiki.html#stopping-conditions">stopping-conditions</a><a class="cite" href="../wiki.html#token-cost">token-cost</a></span><span class="num">08</span></footer>
+</section>
+
+<!-- S09 -->
+<section class="slide" id="S09" data-cites="graph-workflow">
+  <h2>串起來 ②：Graph</h2>
+  <div class="body">
+    <ul class="points">
+      <li>每個節點（Node）只專注做一件事</li>
+      <li>例：A 寫大綱、B 檢查漏洞、C 輸出報告</li>
+      <li>流程不是直線：可依條件跳回前面節點</li>
+      <li>C 發現資料遺漏 → 跳回 B，甚至退回 A</li>
+    </ul>
+    <svg class="diagram" viewBox="0 0 460 270" role="img" aria-label="A、B、C 三個節點，C 可以跳回 B 或 A">
+      <g class="node"><rect x="20" y="100" width="120" height="56" rx="10"/><text x="80" y="128">A 寫大綱</text></g>
+      <g class="node check"><rect x="170" y="100" width="120" height="56" rx="10"/><text x="230" y="128">B 檢查漏洞</text></g>
+      <g class="node"><rect x="320" y="100" width="120" height="56" rx="10"/><text x="380" y="128">C 輸出報告</text></g>
+      <path class="fwd" d="M140 128 L168 128"/>
+      <path class="fwd" d="M290 128 L318 128"/>
+      <path class="ret" d="M380 100 C362 44, 250 44, 232 98"/>
+      <text class="lbl-back" x="306" y="40">資料遺漏 → 回 B</text>
+      <path class="ret" d="M380 156 C350 246, 110 246, 82 160"/>
+      <text class="lbl-back" x="230" y="252">更嚴重 → 退回 A</text>
+    </svg>
+  </div>
+  <footer><span class="cites"><a class="cite" href="../wiki.html#graph-workflow">graph-workflow</a></span><span class="num">09</span></footer>
+</section>
+
+<!-- S10 -->
+<section class="slide" id="S10" data-cites="reflection-loop graph-workflow over-engineering">
+  <h2>Loop 還是 Graph？先從簡單的開始</h2>
+  <div class="body wide-left">
+    <ul class="points">
+      <li><b>Loop</b>：固定的「產生 ⇄ 審查」來回</li>
+      <li><b>Graph</b>：依條件在不同節點間跳躍、回溯</li>
+      <li>簡單 Prompt 能解決，就不要用 Loop</li>
+      <li>Loop 能解決，就不要堆複雜 Graph</li>
+      <li>流程應從人類實際做事的步驟演化而來</li>
+    </ul>
+    <div class="stairs" role="img" aria-label="Prompt、Loop、Graph 三層階梯，一層不夠才往上">
+      <div class="s1">Prompt<small>先試這個</small></div>
+      <div class="s2">Loop<small>一層不夠才往上</small></div>
+      <div class="s3">Graph<small>需要跳回才用</small></div>
+    </div>
+  </div>
+  <footer><span class="cites"><a class="cite" href="../wiki.html#reflection-loop">reflection-loop</a><a class="cite" href="../wiki.html#graph-workflow">graph-workflow</a><a class="cite" href="../wiki.html#over-engineering">over-engineering</a></span><span class="num">10</span></footer>
+</section>
+
+<!-- S11 -->
+<section class="slide" id="S11" data-cites="human-checkpoint planning">
+  <h2>人類該在哪裡出手？</h2>
+  <div class="body">
+    <ul class="points">
+      <li>大綱生成後，是人類的最佳檢查點</li>
+      <li>在大綱修正，可避免之後重做 HTML 的大成本</li>
+      <li>管理者只抓兩關：大綱審核、最終檢查報告</li>
+      <li>動手前先提計畫，讓人審核再執行</li>
+    </ul>
+    <div class="timeline" role="img" aria-label="大綱、內容、HTML、成品四個階段，越往後修正成本越高，人類站在大綱">
+      <div class="step human"><span class="who">人類審</span><div class="bar b1"></div>大綱</div>
+      <div class="step"><div class="bar b2"></div>內容</div>
+      <div class="step"><div class="bar b3"></div>HTML</div>
+      <div class="step"><div class="bar b4"></div>成品</div>
+      <div class="axis">柱子高度＝在這一步才發現錯誤時，要重做的量</div>
+    </div>
+  </div>
+  <aside class="speaker">講者備註：例子是檔案分類器，Agent 先提 5 類分類計畫，管理員確認後才搬檔案。</aside>
+  <footer><span class="cites"><a class="cite" href="../wiki.html#human-checkpoint">human-checkpoint</a><a class="cite" href="../wiki.html#planning">planning</a></span><span class="num">11</span></footer>
+</section>
+
+<!-- S12 -->
+<section class="slide" id="S12" data-cites="project llm-wiki graph-workflow human-checkpoint stopping-conditions">
+  <h2>實例：這份簡報是怎麼做出來的</h2>
+  <div class="body stack">
+    <svg class="diagram wide" viewBox="0 0 760 320" role="img" aria-label="本專案的簡報生成流程圖">
+      <g class="node done"><rect x="20" y="60" width="120" height="50" rx="10"/><text x="80" y="85">原始課程資料</text></g>
+      <g class="node"><rect x="170" y="60" width="120" height="50" rx="10"/><text x="230" y="85">LLM Wiki</text></g>
+      <g class="node check"><rect x="320" y="60" width="120" height="50" rx="10"/><text x="380" y="85">Wiki 事實抽查</text></g>
+      <g class="node"><rect x="470" y="60" width="120" height="50" rx="10"/><text x="530" y="85">大綱</text></g>
+      <g class="node human"><rect x="620" y="60" width="120" height="50" rx="10"/><text x="680" y="85">人類審大綱</text></g>
+      <g class="node"><rect x="620" y="210" width="120" height="50" rx="10"/><text x="680" y="235">逐頁內容</text></g>
+      <g class="node check"><rect x="470" y="210" width="120" height="50" rx="10"/><text x="530" y="235">簡報事實審查</text></g>
+      <g class="node"><rect x="320" y="210" width="120" height="50" rx="10"/><text x="380" y="235">HTML</text></g>
+      <g class="node check"><rect x="170" y="210" width="120" height="50" rx="10"/><text x="230" y="235">驗證＋截圖</text></g>
+      <g class="node done"><rect x="20" y="210" width="120" height="50" rx="10"/><text x="80" y="235">發佈</text></g>
+      <path class="fwd" d="M140 85 L168 85"/><path class="fwd" d="M290 85 L318 85"/><path class="fwd" d="M440 85 L468 85"/><path class="fwd" d="M590 85 L618 85"/>
+      <path class="fwd" d="M680 110 L680 208"/>
+      <path class="fwd" d="M620 235 L592 235"/><path class="fwd" d="M470 235 L442 235"/><path class="fwd" d="M320 235 L292 235"/><path class="fwd" d="M170 235 L142 235"/>
+      <path class="ret" d="M380 60 C362 6 248 6 232 58"/><text class="lbl-back" x="306" y="8">找到 7 處不符</text>
+      <path class="ret" d="M530 260 C550 302 660 302 680 262"/><text class="lbl-back" x="605" y="306">≤3 輪</text>
+      <path class="ret" d="M230 260 C250 302 360 302 380 262"/><text class="lbl-back" x="305" y="306">版面錯 → 重渲染</text>
+      <text class="lbl-human end" x="670" y="146">只在這裡</text>
+      <text class="lbl-human end" x="670" y="166">停下來問人</text>
+    </svg>
+    <ul class="points two-col">
+      <li>6 份原始課程資料 → 整理成 LLM Wiki</li>
+      <li>節點：Wiki → 大綱 → 逐頁內容 → HTML → 驗證</li>
+      <li>生成過程中，人類只在大綱這一關審核</li>
+      <li>每個 Loop 最多 3 輪，超過就停下問人</li>
+      <li>真實錯誤：Wiki 有 7 處和原始資料不符，被審查員抓到</li>
+    </ul>
+  </div>
+  <aside class="speaker">講者備註：7 處不符中有 5 處是原始資料根本沒講的事；有 4 處出在「常見誤區」段，因為模板要求至少寫 1 點，作者就自己補了常識。後來改成「沒有就寫來源未提及」，並把事實抽查提前到 Wiki 這一層。最終檢查報告就是 docs/run-log.md。</aside>
+  <footer><span class="cites"><a class="cite" href="../process.html#workflow">project</a><a class="cite" href="../wiki.html#llm-wiki">llm-wiki</a><a class="cite" href="../wiki.html#graph-workflow">graph-workflow</a><a class="cite" href="../wiki.html#human-checkpoint">human-checkpoint</a><a class="cite" href="../wiki.html#stopping-conditions">stopping-conditions</a></span><span class="num">12</span></footer>
+</section>
+
+<!-- S13 -->
+<section class="slide" id="S13" data-cites="agents-md agent-skills git-version-control coding-agent-vs-work-agent">
+  <h2>把規則寫下來：手冊、Skill、Git</h2>
+  <div class="trio">
+    <div class="item"><h3>員工手冊</h3><p>成果、約束、驗收標準、先計畫</p></div>
+    <div class="item"><h3>Skill</h3><p>把好流程打包，風格不再隨機波動</p></div>
+    <div class="item"><h3>Git</h3><p>AI 把檔案改壞了，可以復原</p></div>
+  </div>
+  <p class="bottomline">Coding Agent 綁定專案資料夾，能讀寫檔案、整合 Git<span class="tools">Claude Code／Codex／Antigravity</span></p>
+  <footer><span class="cites"><a class="cite" href="../wiki.html#agents-md">agents-md</a><a class="cite" href="../wiki.html#agent-skills">agent-skills</a><a class="cite" href="../wiki.html#git-version-control">git-version-control</a><a class="cite" href="../wiki.html#coding-agent-vs-work-agent">coding-agent-vs-work-agent</a></span><span class="num">13</span></footer>
+</section>
+
+<!-- S14 -->
+<section class="slide" id="S14" data-cites="ai-agent stopping-conditions human-checkpoint">
+  <h2>小測驗</h2>
+  <div class="quiz">
+    <details><summary><span class="mono">Q1</span>AI Agent 的公式是什麼？</summary><p>AI Agent = AI Model + Harness。</p></details>
+    <details><summary><span class="mono">Q2</span>設計 Loop 時至少要有哪兩種設計？</summary><p>客觀的放行條件，以及煞車機制（如最多 3～5 次、資訊不足即停）。</p></details>
+    <details><summary><span class="mono">Q3</span>用 Graph 做簡報，人類最該在哪一步檢查？</summary><p>大綱生成後。在這裡修正，可以避免之後重做 HTML。</p></details>
+  </div>
+  <footer><span class="cites"><a class="cite" href="../wiki.html#ai-agent">ai-agent</a><a class="cite" href="../wiki.html#stopping-conditions">stopping-conditions</a><a class="cite" href="../wiki.html#human-checkpoint">human-checkpoint</a></span><span class="num">14</span></footer>
+</section>
+
+<!-- S15 -->
+<section class="slide" id="S15" data-cites="overview s1-rag-demo s2-agent-demo-notes s3-three-agent-patterns s4-harness-and-agents-md s5-karpathy-llm-wiki s6-loop-and-graph">
+  <h2>小結與參考資料</h2>
+  <div class="body">
+    <ol class="takeaways">
+      <li>Agent = Model + Harness，關鍵在怎麼安排步驟</li>
+      <li>Loop 要有放行條件和煞車；需要跳回才用 Graph</li>
+      <li>人類在大綱出手，越早檢查越便宜</li>
+    </ol>
+    <div>
+      <ul class="sources">
+        <li><a href="../wiki.html#s1-rag-demo"><span class="mono">s1</span>第七週 RAG 作業範例講解</a></li>
+        <li><a href="../wiki.html#s2-agent-demo-notes"><span class="mono">s2</span>第八週 Agent 實作示範講解</a></li>
+        <li><a href="../wiki.html#s3-three-agent-patterns"><span class="mono">s3</span>第八週作業：三種 Agent 方法</a></li>
+        <li><a href="../wiki.html#s4-harness-and-agents-md"><span class="mono">s4</span>第九週：Harness 與專案構建</a></li>
+        <li><a href="../wiki.html#s5-karpathy-llm-wiki"><span class="mono">s5</span>Karpathy《LLM Wiki》</a></li>
+        <li><a href="../wiki.html#s6-loop-and-graph"><span class="mono">s6</span>第十週：Loop 與 Graph</a></li>
+      </ul>
+      <p><a class="btn" href="../wiki.html">讀完整 Wiki</a> <a class="btn" href="../process.html">看流程與檢查紀錄</a></p>
+    </div>
+  </div>
+  <footer><span class="cites"><a class="cite" href="../wiki.html#overview">overview</a><a class="cite" href="../wiki.html#s1-rag-demo">s1</a><a class="cite" href="../wiki.html#s2-agent-demo-notes">s2</a><a class="cite" href="../wiki.html#s3-three-agent-patterns">s3</a><a class="cite" href="../wiki.html#s4-harness-and-agents-md">s4</a><a class="cite" href="../wiki.html#s5-karpathy-llm-wiki">s5</a><a class="cite" href="../wiki.html#s6-loop-and-graph">s6</a></span><span class="num">15</span></footer>
+</section>
+
+</main>
+
+<div class="controls">
+  <a class="btn" href="../index.html">首頁</a>
+  <span class="nav"><button type="button" data-act="prev" aria-label="上一頁">上一頁</button></span>
+  <span class="pos" data-pos aria-live="polite"></span>
+  <span class="nav"><button type="button" data-act="next" aria-label="下一頁">下一頁</button></span>
+  <button type="button" data-act="handout" aria-pressed="false">講義模式</button>
+</div>
+</div>
+
+<script src="../assets/js/deck.js"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Agent 工作流程｜LLM Wiki 與教學簡報</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="assets/css/deck.css">
+</head>
+<body>
+<main class="page">
+  <h1>AI Agent 怎麼做事？從 Loop 到 Graph</h1>
+  <p class="muted">把「生成式 AI」第 7～10 週的課程內容整理成一個 LLM Wiki，再用一條有檢查點的 Graph 流程，從 Wiki 產生給初學者看的教學簡報。簡報每一頁都標出它引用了哪些 Wiki 條目。</p>
+
+  <ul class="home-links">
+    <li><a href="deck/index.html"><b>教學簡報</b><span>15 頁。用 ← → 翻頁，「講義模式」可以一次展開全部頁面與講者備註。</span></a></li>
+    <li><a href="wiki.html"><b>LLM Wiki</b><span>6 頁來源摘要、19 個概念條目、1 頁總覽。每一點都標出來自哪一份課程資料。</span></a></li>
+    <li><a href="process.html"><b>流程與檢查紀錄</b><span>Loop / Graph 設計圖、實際執行的每一次檢查與失敗、反思。</span></a></li>
+  </ul>
+
+  <h2>這個專案怎麼運作</h2>
+  <pre>原始課程資料（raw/，唯讀）
+  → LLM Wiki（wiki/）→ 格式檢查 → 事實抽查（另一個 Agent）
+  → 大綱 → 大綱檢查 → 【人類審大綱】
+  → 逐頁內容 ⇄ 事實審查（另一個 Agent，最多 3 輪）
+  → HTML → 結構檢查＋截圖驗證 → 發佈</pre>
+  <p class="muted">規則寫在 <a href="https://github.com/Wilson0503/agent-workflow-wiki/blob/main/CLAUDE.md">CLAUDE.md</a>；原始碼在 <a href="https://github.com/Wilson0503/agent-workflow-wiki">GitHub</a>。</p>
+</main>
+</body>
+</html>
